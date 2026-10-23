@@ -1,5 +1,7 @@
 package dev.javarpg.server.repository;
 
+import static dev.javarpg.server.repository.ContentChecks.check;
+
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.javarpg.core.rules.Curriculum;
@@ -87,11 +89,5 @@ public final class WorldLoader {
         }
         String row = raw.rows().get(y);
         return x < row.length() && row.charAt(x) == FLOOR;
-    }
-
-    private static void check(String file, boolean ok, String key, String detail) {
-        if (!ok) {
-            throw new ContentLoadException(file + ": '" + key + "' " + detail);
-        }
     }
 }

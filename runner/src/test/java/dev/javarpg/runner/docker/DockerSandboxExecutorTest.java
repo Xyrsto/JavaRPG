@@ -19,14 +19,14 @@ class DockerSandboxExecutorTest {
 
     @Test
     void dockerCliAndDaemonFailuresAreRecognised() {
-        assertTrue(DockerSandboxExecutor.isDockerFailure(125, ""));
-        assertTrue(DockerSandboxExecutor.isDockerFailure(126, ""));
-        assertTrue(DockerSandboxExecutor.isDockerFailure(127, ""));
-        assertTrue(DockerSandboxExecutor.isDockerFailure(1, "docker: Error response from daemon: x"));
-        assertTrue(DockerSandboxExecutor.isDockerFailure(1, "  Error response from daemon: no such image"));
-        assertFalse(DockerSandboxExecutor.isDockerFailure(1, "Exception in thread \"main\" java.lang.Error"));
-        assertFalse(DockerSandboxExecutor.isDockerFailure(0, ""));
-        assertFalse(DockerSandboxExecutor.isDockerFailure(124, ""));
+        assertTrue(ContainerResultMapper.isDockerFailure(125, ""));
+        assertTrue(ContainerResultMapper.isDockerFailure(126, ""));
+        assertTrue(ContainerResultMapper.isDockerFailure(127, ""));
+        assertTrue(ContainerResultMapper.isDockerFailure(1, "docker: Error response from daemon: x"));
+        assertTrue(ContainerResultMapper.isDockerFailure(1, "  Error response from daemon: no such image"));
+        assertFalse(ContainerResultMapper.isDockerFailure(1, "Exception in thread \"main\" java.lang.Error"));
+        assertFalse(ContainerResultMapper.isDockerFailure(0, ""));
+        assertFalse(ContainerResultMapper.isDockerFailure(124, ""));
     }
 
     @Test
@@ -34,7 +34,7 @@ class DockerSandboxExecutorTest {
         Path base = tmp.resolve("run");
         SandboxRequest request = new SandboxRequest("11111111-2222-3333-4444-555555555555", Profile.BASIC,
                 Map.of("Main.java", "public class Main { }"), "Main");
-        Path dir = DockerSandboxExecutor.writeSources(request, base);
+        Path dir = RunWorkspace.create(request, base);
         try {
             assertEquals(base, dir.getParent());
             assertTrue(Files.exists(dir.resolve("Main.java")));

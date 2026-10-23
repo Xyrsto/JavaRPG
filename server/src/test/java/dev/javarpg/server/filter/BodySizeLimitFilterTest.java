@@ -94,16 +94,16 @@ class BodySizeLimitFilterTest {
 
     @Test
     void countingStreamThrowsOnlyPastTheLimit() throws Exception {
-        HttpServletRequest wrapped = new BodySizeLimitFilter.CountingRequest(unknownLength(new byte[100]), 100);
+        HttpServletRequest wrapped = new CountingRequest(unknownLength(new byte[100]), 100);
         assertEquals(100, wrapped.getInputStream().readAllBytes().length);
-        HttpServletRequest over = new BodySizeLimitFilter.CountingRequest(unknownLength(new byte[101]), 100);
+        HttpServletRequest over = new CountingRequest(unknownLength(new byte[101]), 100);
         assertThrows(BodyTooLargeException.class, () -> over.getInputStream().readAllBytes());
     }
 
     @Test
     void readerPathIsCountedToo() throws Exception {
         byte[] text = "x".repeat(200).getBytes(StandardCharsets.UTF_8);
-        HttpServletRequest over = new BodySizeLimitFilter.CountingRequest(unknownLength(text), 100);
+        HttpServletRequest over = new CountingRequest(unknownLength(text), 100);
         assertThrows(BodyTooLargeException.class, () -> over.getReader().readLine());
     }
 }

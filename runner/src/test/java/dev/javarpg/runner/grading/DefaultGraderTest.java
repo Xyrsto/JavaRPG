@@ -64,7 +64,7 @@ class DefaultGraderTest {
 
     @Test
     void wrongOutputGivesAlmostSummary() {
-        Quest q = stdoutQuest(List.of(exact("a", "Fire: 7"), exact("b", "Water: 2.5")), List.of());
+        Quest q = stdoutQuest(List.of(new TestCase("a", null, "Fire: 7", MatchMode.CONTAINS), exact("b", "Water: 2.5")), List.of());
         GradeReport r = GRADER.grade(q, TestScope.VISIBLE, ok("Fire: 7\nWater: 9"), "src");
         assertFalse(r.passed());
         assertTrue(r.tests().get(0).passed());

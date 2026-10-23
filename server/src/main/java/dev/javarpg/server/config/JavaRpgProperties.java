@@ -8,37 +8,25 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @ConfigurationProperties(prefix = "javarpg")
 public class JavaRpgProperties {
 
-    private String contentDir = "content/quests";
-    private String worldFile = "content/world/village.json";
-    private String dataDir = "./data";
+    private final Content content = new Content();
+    private final World world = new World();
+    private final Data data = new Data();
     private final Sandbox sandbox = new Sandbox();
     private final Cors cors = new Cors();
     private final Http http = new Http();
     private final Rate rate = new Rate();
     private final Players players = new Players();
 
-    public String getContentDir() {
-        return contentDir;
+    public Content getContent() {
+        return content;
     }
 
-    public void setContentDir(String contentDir) {
-        this.contentDir = contentDir;
+    public World getWorld() {
+        return world;
     }
 
-    public String getWorldFile() {
-        return worldFile;
-    }
-
-    public void setWorldFile(String worldFile) {
-        this.worldFile = worldFile;
-    }
-
-    public String getDataDir() {
-        return dataDir;
-    }
-
-    public void setDataDir(String dataDir) {
-        this.dataDir = dataDir;
+    public Data getData() {
+        return data;
     }
 
     public Sandbox getSandbox() {
@@ -59,6 +47,49 @@ public class JavaRpgProperties {
 
     public Players getPlayers() {
         return players;
+    }
+
+    /**
+     * javarpg.content.* The three path settings are nested groups (not contentDir/worldFile/dataDir) because
+     * relaxed binding maps the key javarpg.world.file to a nested "world" group; flat fields only bound
+     * javarpg.world-file, so the documented keys (and the test profile) were silently ignored.
+     */
+    public static class Content {
+        private String dir = "content/quests";
+
+        public String getDir() {
+            return dir;
+        }
+
+        public void setDir(String dir) {
+            this.dir = dir;
+        }
+    }
+
+    /** javarpg.world.* */
+    public static class World {
+        private String file = "content/world/village.json";
+
+        public String getFile() {
+            return file;
+        }
+
+        public void setFile(String file) {
+            this.file = file;
+        }
+    }
+
+    /** javarpg.data.* (the data directory itself is consumed through spring.datasource.url). */
+    public static class Data {
+        private String dir = "./data";
+
+        public String getDir() {
+            return dir;
+        }
+
+        public void setDir(String dir) {
+            this.dir = dir;
+        }
     }
 
     /** javarpg.sandbox.* */

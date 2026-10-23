@@ -7,6 +7,10 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.List;
+import java.util.Optional;
+import java.util.function.Predicate;
+import java.util.function.ToIntFunction;
 import java.util.regex.Pattern;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
@@ -17,14 +21,29 @@ import org.springframework.web.filter.OncePerRequestFilter;
  * Per-client-IP rate limits on POST /api/v1/players, and on the run and submit endpoints (F-14).
  * The client is identified by getRemoteAddr(); X-Forwarded-For is used only when
  * javarpg.rate.trust-forwarded=true (it is client controlled otherwise).
+ * To limit another endpoint, add a Rule to RULES.
  */
 @Component
 @Order(Ordered.HIGHEST_PRECEDENCE + 30)
 public class RateLimitFilter extends OncePerRequestFilter {
 
-    private static final String PLAYERS_PATH = "/api/v1/players";
-    private static final Pattern RUN_PATH = Pattern.compile("^/api/v1/players/[^/]+/quests/[^/]+/run$");
-    private static final Pattern SUBMIT_PATH = Pattern.compile("^/api/v1/players/[^/]+/quests/[^/]+/submit$");
+    /** One limited endpoint: the bucket name, which paths it covers and where its per-minute limit lives. */
+    private record Rule(String bucket, Predicate<String> covers, ToIntFunction<JavaRpgProperties.Rate> limit) {
+        static Rule exact(String bucket, String path, ToIntFunction<JavaRpgProperties.Rate> limit) {
+            return new Rule(bucket, path::equals, limit);
+        }
+
+        static Rule matching(String bucket, String regex, ToIntFunction<JavaRpgProperties.Rate> limit) {
+            Pattern pattern = Pattern.compile(regex);
+            return new Rule(bucket, path -> pattern.matcher(path).matches(), limit);
+        }
+    }
+
+    private static final List<Rule> RULES = List.of(
+            Rule.exact("players", "/api/v1/players", JavaRpgProperties.Rate::getPlayersPerMinute),
+            Rule.matching("run", "^/api/v1/players/[^/]+/quests/[^/]+/run$", JavaRpgProperties.Rate::getRunPerMinute),
+            Rule.matching("submit", "^/api/v1/players/[^/]+/quests/[^/]+/submit$",
+                    JavaRpgProperties.Rate::getSubmitPerMinute));
 
     private final TokenBucketRateLimiter limiter;
     private final JavaRpgProperties props;
@@ -38,21 +57,10 @@ public class RateLimitFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
             throws ServletException, IOException {
         if ("POST".equals(request.getMethod())) {
-            String path = request.getRequestURI();
-            String bucket = null;
-            int limit = 0;
-            if (PLAYERS_PATH.equals(path)) {
-                bucket = "players";
-                limit = props.getRate().getPlayersPerMinute();
-            } else if (RUN_PATH.matcher(path).matches()) {
-                bucket = "run";
-                limit = props.getRate().getRunPerMinute();
-            } else if (SUBMIT_PATH.matcher(path).matches()) {
-                bucket = "submit";
-                limit = props.getRate().getSubmitPerMinute();
-            }
-            if (bucket != null) {
-                long wait = limiter.tryAcquire(bucket + "|" + clientIp(request), limit);
+            Optional<Rule> rule = ruleFor(request.getRequestURI());
+            if (rule.isPresent()) {
+                long wait = limiter.tryAcquire(rule.get().bucket() + "|" + clientIp(request),
+                        rule.get().limit().applyAsInt(props.getRate()));
                 if (wait > 0) {
                     response.setHeader("Retry-After", Long.toString(wait));
                     FilterErrors.write(response, 429, "RATE_LIMITED",
@@ -62,6 +70,10 @@ public class RateLimitFilter extends OncePerRequestFilter {
             }
         }
         chain.doFilter(request, response);
+    }
+
+    private static Optional<Rule> ruleFor(String path) {
+        return RULES.stream().filter(rule -> rule.covers().test(path)).findFirst();
     }
 
     private String clientIp(HttpServletRequest request) {

@@ -45,6 +45,16 @@
 
     <build>
         <plugins>
+            <!-- The parent POM imports the Spring Boot BOM instead of inheriting spring-boot-starter-parent, so
+                 -parameters is not on by default. Without it @PathVariable String playerId has no name and
+                 every path-variable request fails with IllegalArgumentException (HTTP 400). -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <parameters>true</parameters>
+                </configuration>
+            </plugin>
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>

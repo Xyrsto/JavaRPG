@@ -190,6 +190,8 @@ class FileQuestRepositoryTest {
         m.put("visibleTests", List.of(testWithCall("a", "Solution.add(2, -3)", "5", "EXACT_TRIMMED"),
                 testWithCall("b", "Solution.name(\"Mira\", 'c', true, 2.5)", "x", "EXACT_TRIMMED"),
                 testWithCall("c", "Solution.sum(new int[]{1, 2, 3})", "6", "EXACT_TRIMMED")));
+        // validMap's hidden tests are STDOUT-shaped (no call), which METHOD_RETURN correctly rejects.
+        m.put("hiddenTests", List.of(testWithCall("h", "Solution.add(1, 1)", "2", "EXACT_TRIMMED")));
         write("V08.json", m);
         new FileQuestRepository(dir, WORLD);
     }
