@@ -1,6 +1,9 @@
 public class Main {
     static {
-        while (true) {
+        // A bare while(true) here is a javac error; the condition keeps it compilable.
+        if (System.nanoTime() != 0L) {
+            while (true) {
+            }
         }
     }
 
