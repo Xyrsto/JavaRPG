@@ -1,0 +1,61 @@
+{
+  "id": "V02",
+  "region": "V",
+  "title": "The Four Elements",
+  "concept": "Primitive types",
+  "story": "Smith Orin wipes soot from his hands and points at four glowing stones. \"Fire, water, earth and air keep my forge alive, but their labels have faded. Give each one a Java variable of the right type and I will open the east gate for you.\"",
+  "goal": "Declare int fire = 7; double water = 2.5; boolean earth = true; and char air = 'A'. Print the four lines Fire: 7, Water: 2.5, Earth: true and Air: A. Then declare int bonus = 5 and print Total: 12, computed from fire + bonus.",
+  "kind": "STDOUT",
+  "starterCode": [
+    "public class Main {",
+    "    public static void main(String[] args) {",
+    "        // TODO 1: declare an int variable called fire with the value 7",
+    "        // TODO 2: declare a double variable called water with the value 2.5",
+    "        // TODO 3: declare a boolean variable called earth with the value true",
+    "        // TODO 4: declare a char variable called air with the value 'A'",
+    "        // TODO 5: print the four lines Fire: 7, Water: 2.5, Earth: true and Air: A",
+    "        // TODO 6: declare an int variable called bonus with the value 5",
+    "        // TODO 7: print Total: 12 by adding fire and bonus",
+    "    }",
+    "}"
+  ],
+  "profile": "BASIC",
+  "visibleTests": [
+    {"name": "prints the four elements and the total", "expected": "Fire: 7\nWater: 2.5\nEarth: true\nAir: A\nTotal: 12", "match": "EXACT_TRIMMED"},
+    {"name": "declares an int variable called fire", "expected": "\\bint\\s+fire\\s*=", "match": "SOURCE_REGEX"}
+  ],
+  "hiddenTests": [
+    {"name": "declares a double variable called water", "expected": "\\bdouble\\s+water", "match": "SOURCE_REGEX"},
+    {"name": "declares a boolean variable called earth", "expected": "\\bboolean\\s+earth", "match": "SOURCE_REGEX"},
+    {"name": "the char is written with single quotes", "expected": "\\bchar\\s+air\\s*=\\s*'", "match": "SOURCE_REGEX"},
+    {"name": "the total is computed from fire and bonus", "expected": "fire\\s*\\+\\s*bonus", "match": "SOURCE_REGEX"}
+  ],
+  "hints": [
+    "Each stone needs a variable. Match the type to the value: whole numbers use int, decimal numbers use double, yes or no uses boolean, and one letter uses char.",
+    "A char holds ONE character in single quotes, like 'A'. To print a total, join text and a number with +, for example \"Total: \" + (fire + bonus).",
+    "Your main needs these lines in order: int fire = 7; double water = 2.5; boolean earth = true; char air = 'A'; four System.out.println lines; int bonus = 5; then a println that prints \"Total: \" + (fire + bonus)."
+  ],
+  "referenceSolution": [
+    "public class Main {",
+    "    public static void main(String[] args) {",
+    "        int fire = 7;",
+    "        double water = 2.5;",
+    "        boolean earth = true;",
+    "        char air = 'A';",
+    "        System.out.println(\"Fire: \" + fire);",
+    "        System.out.println(\"Water: \" + water);",
+    "        System.out.println(\"Earth: \" + earth);",
+    "        System.out.println(\"Air: \" + air);",
+    "        int bonus = 5;",
+    "        System.out.println(\"Total: \" + (fire + bonus));",
+    "    }",
+    "}"
+  ],
+  "explanation": "int stores whole numbers, double stores decimal numbers, boolean stores true or false, and char stores one character in single quotes. Every variable has a type that decides which values it may hold. Adding two int values gives an int, so fire + bonus is 12.",
+  "commonMistakes": [
+    {"source": "COMPILER", "pattern": "incompatible types", "message": "A char holds one character in SINGLE quotes, like 'A'. Double quotes make text (a String), which is a different type."},
+    {"source": "STDOUT", "pattern": "Total: (5|7)\\b", "message": "Your total is missing the bonus. Add fire and bonus together, not just one of them."},
+    {"source": "SOURCE", "pattern": "Total: 12", "message": "Do not type 12 yourself. Compute the total from fire and bonus so the program still works when the numbers change."}
+  ],
+  "worldEffect": {"type": "OPEN_GATE", "target": "B", "message": "The east gate swings open."}
+}
