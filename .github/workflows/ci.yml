@@ -59,3 +59,44 @@ jobs:
           path: '**/target/surefire-reports/'
           retention-days: 3
           if-no-files-found: warn
+
+  web:
+    name: web
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: web/.nvmrc
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - name: Install the exact locked dependencies
+        run: npm ci
+      - name: Lint
+        run: npm run lint
+      - name: Type check
+        run: npm run typecheck
+      - name: Unit tests
+        run: npm test
+      - name: The generated API types are up to date with the API description
+        run: |
+          npm run api:types
+          git diff --exit-code -- src/api/schema.d.ts
+      - name: Production build
+        run: npm run build
+      - name: No references to other sites, size budget
+        run: node scripts/check-dist.mjs
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      - name: The server packs the client when asked to
+        working-directory: .
+        run: |
+          mvn -B --no-transfer-progress -Pweb -pl server -am package -DskipTests
+          unzip -l server/target/server-*-SNAPSHOT.jar | grep -q "BOOT-INF/classes/static/index.html"

@@ -7,6 +7,7 @@ header_pages:
   - index.md
   - quick-start.md
   - concepts.md
+  - web.md
   - api/index.md
   - ci.md
 plugins:
