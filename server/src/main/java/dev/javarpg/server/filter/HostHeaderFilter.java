@@ -1,5 +1,6 @@
 package dev.javarpg.server.filter;
 
+import dev.javarpg.core.contract.ErrorCode;
 import dev.javarpg.server.config.JavaRpgProperties;
 import dev.javarpg.server.config.SandboxSafety;
 import jakarta.servlet.FilterChain;
@@ -32,7 +33,7 @@ public class HostHeaderFilter extends OncePerRequestFilter {
             throws ServletException, IOException {
         if (SandboxSafety.UNSAFE_LOCAL.equals(props.getSandbox().getMode())
                 && !isLocalHost(request.getHeader("Host"))) {
-            FilterErrors.write(response, HttpServletResponse.SC_FORBIDDEN, "FORBIDDEN",
+            FilterErrors.write(response, ErrorCode.FORBIDDEN,
                     "This server only answers on localhost.");
             return;
         }

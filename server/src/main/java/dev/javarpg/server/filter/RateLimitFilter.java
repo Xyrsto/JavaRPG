@@ -1,5 +1,6 @@
 package dev.javarpg.server.filter;
 
+import dev.javarpg.core.contract.ErrorCode;
 import dev.javarpg.server.config.JavaRpgProperties;
 import dev.javarpg.server.util.TokenBucketRateLimiter;
 import jakarta.servlet.FilterChain;
@@ -63,7 +64,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
                         rule.get().limit().applyAsInt(props.getRate()));
                 if (wait > 0) {
                     response.setHeader("Retry-After", Long.toString(wait));
-                    FilterErrors.write(response, 429, "RATE_LIMITED",
+                    FilterErrors.write(response, ErrorCode.RATE_LIMITED,
                             "You are going a little fast. Wait a few seconds and try again.");
                     return;
                 }

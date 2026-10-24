@@ -102,9 +102,15 @@ class SchemaDocs implements OpenApiCustomizer {
     }
 
     private void addErrorCodes(Schema errorBody) {
-        TreeSet<String> codes = new TreeSet<>(List.of("NOT_FOUND", "FORBIDDEN", "RATE_LIMITED"));
+        TreeSet<String> codes = new TreeSet<>();
         for (ErrorCode code : ErrorCode.values()) {
             codes.add(code.name());
+        }
+        TreeSet<String> wordingCodes = new TreeSet<>();
+        wording.errors().fieldNames().forEachRemaining(wordingCodes::add);
+        if (!wordingCodes.equals(codes)) {
+            throw new IllegalStateException("openapi/errors.yaml must have exactly the ErrorCode entries; it has " + wordingCodes
+                    + " but the enum has " + codes);
         }
         Map<String, Object> table = new LinkedHashMap<>();
         for (String code : codes) {
