@@ -1,0 +1,1695 @@
+openapi: 3.0.1
+info:
+  description: |-
+    The JavaRPG game server. A player walks a village, talks to characters, and solves small Java quests by sending real Java code that the server compiles and runs in an isolated sandbox.
+
+    **Players.** There are no accounts. Creating a player returns a player id (a UUID) and that id is the only credential: keep it private and send it in the address of every player operation.
+
+    **Errors.** Every failure has the same body, {"error": {"code": "...", "message": "..."}}. Show the message to the player and branch on the code. The ErrorBody schema lists every code with its HTTP status.
+
+    **Hidden data.** The server decides every outcome; the client only draws it. Hidden test expectations are never returned, and a quest's explanation, reference solution and world effect stay empty until the player has completed that quest. Fields that behave this way are marked in the schemas.
+
+    **Limits.** Code is limited to 20000 characters and requests to 64 KiB. Creating players, running and submitting have per-minute limits per address, and a player can have one run or submit going at a time.
+  title: JavaRPG API
+  version: v1
+servers:
+- description: The server that serves this description
+  url: /
+tags:
+- description: "Is the server up, and how does it run player code?"
+  name: health
+- description: "The map, walking the hero and talking to characters."
+  name: world
+- description: Creating a player and reading a player's state.
+  name: players
+- description: "Listing quests, opening one, running and submitting code, and hints."
+  name: quests
+paths:
+  /api/v1/players:
+    post:
+      description: "Starts a new game at the hero start position with no experience.\
+        \ The returned player id is the only credential, there are no accounts, so\
+        \ the client must keep it and send it with every later call. The number of\
+        \ players is capped and creation is rate limited per address."
+      operationId: Player_create
+      responses:
+        "201":
+          content:
+            application/json:
+              example:
+                completedQuestIds: []
+                hero:
+                  x: 5
+                  "y": 4
+                level: 1
+                levelFloorXp: 0
+                nextLevelXp: 230
+                openGates: []
+                playerId: 3f2b8c1e-5a47-4d0e-9c1a-7b6d2e8f4a10
+                worldEffects: []
+                xp: 0
+              schema:
+                $ref: "#/components/schemas/PlayerView"
+          description: The new player.
+        "429":
+          content:
+            application/json:
+              example:
+                error:
+                  code: RATE_LIMITED
+                  message: You are going a little fast. Wait a few seconds and try
+                    again.
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+          description: Too many players were created from this address in the last
+            minute.
+        "503":
+          content:
+            application/json:
+              example:
+                error:
+                  code: SERVER_BUSY
+                  message: The village is full right now. Try again later.
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+          description: The server already holds as many players as it allows.
+      summary: Create a player
+      tags:
+      - players
+  /api/v1/players/{playerId}:
+    get:
+      description: "Returns the current state of one player, which is what a client\
+        \ needs to draw the screen again after a reload."
+      operationId: Player_get
+      parameters:
+      - description: The player id returned when the player was created.
+        example: 3f2b8c1e-5a47-4d0e-9c1a-7b6d2e8f4a10
+        in: path
+        name: playerId
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              example:
+                completedQuestIds:
+                - V01
+                hero:
+                  x: 5
+                  "y": 4
+                level: 1
+                levelFloorXp: 0
+                nextLevelXp: 230
+                openGates:
+                - A
+                playerId: 3f2b8c1e-5a47-4d0e-9c1a-7b6d2e8f4a10
+                worldEffects:
+                - message: The north gate creaks open.
+                  target: A
+                  type: OPEN_GATE
+                xp: 100
+              schema:
+                $ref: "#/components/schemas/PlayerView"
+          description: The player.
+        "400":
+          content:
+            application/json:
+              example:
+                error:
+                  code: BAD_REQUEST
+                  message: That player id is not valid.
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+          description: The player id is not a valid id.
+        "404":
+          content:
+            application/json:
+              example:
+                error:
+                  code: PLAYER_NOT_FOUND
+                  message: We could not find that player. Start a new game.
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+          description: No player has this id.
+      summary: Get a player
+      tags:
+      - players
+  /api/v1/players/{playerId}/interact:
+    post:
+      description: "Talks to the character standing next to the hero. The reply has\
+        \ the character's lines and the state of the quest they give, which tells\
+        \ the client whether to open the quest panel."
+      operationId: World_interact
+      parameters:
+      - description: The player id.
+        example: 3f2b8c1e-5a47-4d0e-9c1a-7b6d2e8f4a10
+        in: path
+        name: playerId
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              example:
+                lines:
+                - Traveller! The north gate is sealed by an old spell.
+                - Only a hero who can write their name in Java may pass.
+                npcId: elder
+                npcName: Elder Mira
+                questId: V01
+                questStatus: AVAILABLE
+              schema:
+                $ref: "#/components/schemas/InteractResponse"
+          description: What the character says.
+        "404":
+          content:
+            application/json:
+              example:
+                error:
+                  code: PLAYER_NOT_FOUND
+                  message: We could not find that player. Start a new game.
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+          description: No player has this id.
+        "409":
+          content:
+            application/json:
+              example:
+                error:
+                  code: NO_NPC_ADJACENT
+                  message: There is nobody to talk to here.
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+          description: No character is next to the hero.
+      summary: Talk to the character next to the hero
+      tags:
+      - world
+  /api/v1/players/{playerId}/move:
+    post:
+      description: "Moves the hero one step at a time through the given directions\
+        \ and stops at the first wall, closed gate or character. Between 1 and 32\
+        \ steps are accepted per call. The server decides where the hero ends up;\
+        \ the client only draws it."
+      operationId: World_move
+      parameters:
+      - description: The player id.
+        example: 3f2b8c1e-5a47-4d0e-9c1a-7b6d2e8f4a10
+        in: path
+        name: playerId
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            example:
+              directions:
+              - LEFT
+              - LEFT
+              - UP
+            schema:
+              $ref: "#/components/schemas/MoveRequest"
+        description: "A JSON object, sent with Content-Type application/json."
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              example:
+                applied: 3
+                blocked: false
+                x: 3
+                "y": 3
+              schema:
+                $ref: "#/components/schemas/MoveResponse"
+          description: The position after the walk.
+        "400":
+          content:
+            application/json:
+              example:
+                error:
+                  code: BAD_REQUEST
+                  message: "Send between 1 and 32 directions: UP, DOWN, LEFT or RIGHT."
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+          description: "No directions, more than 32, or a direction other than UP,\
+            \ DOWN, LEFT and RIGHT."
+        "404":
+          content:
+            application/json:
+              example:
+                error:
+                  code: PLAYER_NOT_FOUND
+                  message: We could not find that player. Start a new game.
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+          description: No player has this id.
+        "415":
+          content:
+            application/json:
+              example:
+                error:
+                  code: BAD_REQUEST
+                  message: Send your request as JSON.
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+          description: The request was not sent as JSON.
+      summary: Walk the hero
+      tags:
+      - world
+  /api/v1/players/{playerId}/quests:
+    get:
+      description: "Returns every quest in teaching order with its state for this\
+        \ player. A quest is LOCKED until the one before it is completed, AVAILABLE\
+        \ when it can be played and COMPLETED once it has been solved."
+      operationId: Quest_list
+      parameters:
+      - description: The player id.
+        example: 3f2b8c1e-5a47-4d0e-9c1a-7b6d2e8f4a10
+        in: path
+        name: playerId
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              example:
+                quests:
+                - concept: Variables and String
+                  id: V01
+                  region: V
+                  regionName: The Village of First Steps
+                  status: AVAILABLE
+                  title: The Adventurer's Name
+                  xp: 100
+                - concept: Primitive types
+                  id: V02
+                  region: V
+                  regionName: The Village of First Steps
+                  status: LOCKED
+                  title: The Four Elements
+                  xp: 100
+              schema:
+                $ref: "#/components/schemas/QuestListResponse"
+          description: The quests.
+        "404":
+          content:
+            application/json:
+              example:
+                error:
+                  code: PLAYER_NOT_FOUND
+                  message: We could not find that player. Start a new game.
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+          description: No player has this id.
+      summary: List the quests
+      tags:
+      - quests
+  /api/v1/players/{playerId}/quests/{questId}:
+    get:
+      description: "Returns the story, goal, starter code, visible tests and unlocked\
+        \ hints of one quest. Hidden tests are never listed. The explanation, the\
+        \ reference solution and the world effect are empty until the player has completed\
+        \ the quest, after which they are filled in. Opening a locked quest is refused."
+      operationId: Quest_detail
+      parameters:
+      - description: The player id.
+        example: 3f2b8c1e-5a47-4d0e-9c1a-7b6d2e8f4a10
+        in: path
+        name: playerId
+        required: true
+        schema:
+          type: string
+      - description: "The quest id, a region letter and a two-digit number."
+        example: V01
+        in: path
+        name: questId
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              example:
+                concept: Variables and String
+                explanation: null
+                failedAttempts: 0
+                goal: "Create a String variable called name holding Adventurer, then\
+                  \ print Hello, Adventurer! using System.out.println and your variable."
+                hints: []
+                hintsTotal: 3
+                hintsUnlocked: 0
+                id: V01
+                kind: STDOUT
+                lastSource: null
+                profile: BASIC
+                referenceSolution: null
+                starterCode: |-
+                  public class Main {
+                      public static void main(String[] args) {
+                      }
+                  }
+                status: AVAILABLE
+                story: "Elder Mira squints at you. A hero with no name cannot cross\
+                  \ the gate. Write it down in Java, and say it aloud."
+                title: The Adventurer's Name
+                visibleTests:
+                - call: null
+                  expected: "Hello, Adventurer!"
+                  name: prints the greeting
+                - call: null
+                  expected: null
+                  name: declares a String variable called name
+                worldEffect: null
+                xp: 100
+              schema:
+                $ref: "#/components/schemas/QuestDetailView"
+          description: The quest.
+        "400":
+          content:
+            application/json:
+              example:
+                error:
+                  code: BAD_REQUEST
+                  message: That quest id is not valid.
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+          description: The player id or the quest id is not a valid id.
+        "403":
+          content:
+            application/json:
+              example:
+                error:
+                  code: QUEST_LOCKED
+                  message: Finish "The Adventurer's Name" first.
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+          description: The quest before this one has not been completed yet.
+        "404":
+          content:
+            application/json:
+              example:
+                error:
+                  code: QUEST_NOT_FOUND
+                  message: There is no quest with that id.
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+          description: No player or no quest has this id.
+      summary: Open a quest
+      tags:
+      - quests
+  /api/v1/players/{playerId}/quests/{questId}/hints/next:
+    post:
+      description: "Unlocks and returns the next hint of a quest. Hints become available\
+        \ after the first failed submit and go from a gentle nudge to nearly the answer.\
+        \ Unlocking is saved, so the hint also appears in the quest view afterwards."
+      operationId: Quest_hint
+      parameters:
+      - description: The player id.
+        example: 3f2b8c1e-5a47-4d0e-9c1a-7b6d2e8f4a10
+        in: path
+        name: playerId
+        required: true
+        schema:
+          type: string
+      - description: The quest id.
+        example: V01
+        in: path
+        name: questId
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              example:
+                hint: A variable is a labelled box. The type String is the box for
+                  text.
+                hintNumber: 1
+                hintsTotal: 3
+                hintsUnlocked: 1
+              schema:
+                $ref: "#/components/schemas/HintResponse"
+          description: The hint that was just unlocked.
+        "400":
+          content:
+            application/json:
+              example:
+                error:
+                  code: BAD_REQUEST
+                  message: That quest id is not valid.
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+          description: An id is not valid.
+        "404":
+          content:
+            application/json:
+              example:
+                error:
+                  code: QUEST_NOT_FOUND
+                  message: There is no quest with that id.
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+          description: No player or no quest has this id.
+        "409":
+          content:
+            application/json:
+              example:
+                error:
+                  code: HINT_NOT_AVAILABLE
+                  message: "Give the challenge a try first, then ask for a hint."
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+          description: "No hint can be unlocked yet because there was no failed submit,\
+            \ or all hints are already unlocked."
+      summary: Unlock the next hint
+      tags:
+      - quests
+  /api/v1/players/{playerId}/quests/{questId}/run:
+    post:
+      description: "Compiles and runs the code in the isolated sandbox and evaluates\
+        \ the visible tests only. Nothing is saved as progress and no hidden data\
+        \ is returned, so a player can try as often as they like within the rate limit.\
+        \ Compiler and runtime messages are returned as they are, with friendly advice\
+        \ beside them. One run or submit per player at a time."
+      operationId: Quest_run
+      parameters:
+      - description: The player id.
+        example: 3f2b8c1e-5a47-4d0e-9c1a-7b6d2e8f4a10
+        in: path
+        name: playerId
+        required: true
+        schema:
+          type: string
+      - description: The quest id.
+        example: V01
+        in: path
+        name: questId
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            example:
+              source: |-
+                public class Main {
+                    public static void main(String[] args) {
+                        String name = "Adventurer";
+                        System.out.println("Hello, " + name + "!");
+                    }
+                }
+            schema:
+              $ref: "#/components/schemas/SourceRequest"
+        description: "A JSON object, sent with Content-Type application/json."
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              example:
+                compilerOutput: ""
+                durationMillis: 1215
+                friendlyHints: []
+                passed: true
+                questId: V01
+                scope: VISIBLE
+                status: OK
+                stderr: ""
+                stdout: |
+                  Hello, Adventurer!
+                summary: All visible tests pass. Press Submit to finish the challenge.
+                tests:
+                - actual: "Hello, Adventurer!"
+                  expected: "Hello, Adventurer!"
+                  hidden: false
+                  message: Passed.
+                  name: prints the greeting
+                  passed: true
+                - actual: null
+                  expected: null
+                  hidden: false
+                  message: Passed.
+                  name: declares a String variable called name
+                  passed: true
+              schema:
+                $ref: "#/components/schemas/RunResponse"
+          description: "The result of the run, whether or not the code is correct."
+        "400":
+          content:
+            application/json:
+              example:
+                error:
+                  code: BAD_REQUEST
+                  message: Something in your request was not understood. Check the
+                    values and try again.
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+          description: "The body is not valid JSON, or an id is not valid."
+        "403":
+          content:
+            application/json:
+              example:
+                error:
+                  code: QUEST_LOCKED
+                  message: Finish "The Adventurer's Name" first.
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+          description: The quest is locked.
+        "404":
+          content:
+            application/json:
+              example:
+                error:
+                  code: QUEST_NOT_FOUND
+                  message: There is no quest with that id.
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+          description: No player or no quest has this id.
+        "413":
+          content:
+            application/json:
+              example:
+                error:
+                  code: SOURCE_TOO_LARGE
+                  message: That code is too long. Keep it under 20000 characters.
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+          description: "The code is longer than 20000 characters, or the request is\
+            \ larger than 64 KiB."
+        "415":
+          content:
+            application/json:
+              example:
+                error:
+                  code: BAD_REQUEST
+                  message: Send your request as JSON.
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+          description: The request was not sent as JSON.
+        "422":
+          content:
+            application/json:
+              example:
+                error:
+                  code: QUEST_PROFILE_UNSUPPORTED
+                  message: This kind of challenge is not available yet.
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+          description: The quest needs a sandbox profile this server does not offer
+            yet.
+        "429":
+          content:
+            application/json:
+              example:
+                error:
+                  code: RUN_IN_PROGRESS
+                  message: One of your runs is still going. Wait for it to finish.
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+          description: "A run of this player is still in progress, or the per-minute\
+            \ limit was reached."
+        "503":
+          content:
+            application/json:
+              example:
+                error:
+                  code: SERVER_BUSY
+                  message: The code runner is busy right now. Try again in a moment.
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+          description: The server is running as many sandboxes as it allows.
+      summary: Try code without submitting
+      tags:
+      - quests
+  /api/v1/players/{playerId}/quests/{questId}/submit:
+    post:
+      description: "Runs the code like a trial run but evaluates all tests, hidden\
+        \ ones included. A pass completes the quest and, the first time, awards experience\
+        \ points and applies the world effect. A failure returns which tests failed\
+        \ without revealing hidden expectations, and unlocks the next hint. Hidden\
+        \ test results only say whether they passed."
+      operationId: Quest_submit
+      parameters:
+      - description: The player id.
+        example: 3f2b8c1e-5a47-4d0e-9c1a-7b6d2e8f4a10
+        in: path
+        name: playerId
+        required: true
+        schema:
+          type: string
+      - description: The quest id.
+        example: V01
+        in: path
+        name: questId
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            example:
+              source: |-
+                public class Main {
+                    public static void main(String[] args) {
+                        String name = "Adventurer";
+                        System.out.println("Hello, " + name + "!");
+                    }
+                }
+            schema:
+              $ref: "#/components/schemas/SourceRequest"
+        description: "A JSON object, sent with Content-Type application/json."
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              example:
+                compilerOutput: ""
+                completion:
+                  explanation: "String name = \"Adventurer\"; creates a variable:\
+                    \ a named place in memory that holds text."
+                  firstCompletion: true
+                  level: 1
+                  levelUp: false
+                  totalXp: 100
+                  unlockedQuestId: V02
+                  worldEffect:
+                    message: The north gate creaks open.
+                    target: A
+                    type: OPEN_GATE
+                  xpAwarded: 100
+                durationMillis: 817
+                friendlyHints: []
+                passed: true
+                questId: V01
+                scope: ALL
+                status: OK
+                stderr: ""
+                stdout: |
+                  Hello, Adventurer!
+                summary: Challenge complete!
+                tests:
+                - actual: "Hello, Adventurer!"
+                  expected: "Hello, Adventurer!"
+                  hidden: false
+                  message: Passed.
+                  name: prints the greeting
+                  passed: true
+                - actual: null
+                  expected: null
+                  hidden: true
+                  message: Passed.
+                  name: Hidden test 1
+                  passed: true
+              schema:
+                $ref: "#/components/schemas/SubmitResponse"
+          description: The graded result. completion is filled only when the submit
+            passed.
+        "400":
+          content:
+            application/json:
+              example:
+                error:
+                  code: BAD_REQUEST
+                  message: Something in your request was not understood. Check the
+                    values and try again.
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+          description: "The body is not valid JSON, or an id is not valid."
+        "403":
+          content:
+            application/json:
+              example:
+                error:
+                  code: QUEST_LOCKED
+                  message: Finish "The Adventurer's Name" first.
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+          description: The quest is locked.
+        "404":
+          content:
+            application/json:
+              example:
+                error:
+                  code: QUEST_NOT_FOUND
+                  message: There is no quest with that id.
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+          description: No player or no quest has this id.
+        "413":
+          content:
+            application/json:
+              example:
+                error:
+                  code: SOURCE_TOO_LARGE
+                  message: That code is too long. Keep it under 20000 characters.
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+          description: "The code is longer than 20000 characters, or the request is\
+            \ larger than 64 KiB."
+        "415":
+          content:
+            application/json:
+              example:
+                error:
+                  code: BAD_REQUEST
+                  message: Send your request as JSON.
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+          description: The request was not sent as JSON.
+        "422":
+          content:
+            application/json:
+              example:
+                error:
+                  code: QUEST_PROFILE_UNSUPPORTED
+                  message: This kind of challenge is not available yet.
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+          description: The quest needs a sandbox profile this server does not offer
+            yet.
+        "429":
+          content:
+            application/json:
+              example:
+                error:
+                  code: RUN_IN_PROGRESS
+                  message: One of your runs is still going. Wait for it to finish.
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+          description: "A run of this player is still in progress, or the per-minute\
+            \ limit was reached."
+        "503":
+          content:
+            application/json:
+              example:
+                error:
+                  code: SERVER_BUSY
+                  message: The code runner is busy right now. Try again in a moment.
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+          description: The server is running as many sandboxes as it allows.
+      summary: Submit code for grading
+      tags:
+      - quests
+  /api/v1/world:
+    get:
+      description: "Returns the static village map with its gates and characters.\
+        \ It is the same for every player, so a client can load it once. Where a particular\
+        \ player stands and which gates are open is in the player view."
+      operationId: World_world
+      responses:
+        "200":
+          content:
+            application/json:
+              example:
+                gates:
+                - id: A
+                  x: 5
+                  "y": 6
+                - id: B
+                  x: 11
+                  "y": 7
+                height: 9
+                heroStart:
+                  x: 5
+                  "y": 4
+                id: village
+                legend:
+                  '#': wall
+                  ".": floor
+                  A: gate
+                  B: gate
+                npcs:
+                - id: elder
+                  name: Elder Mira
+                  questId: V01
+                  x: 3
+                  "y": 2
+                - id: smith
+                  name: Smith Orin
+                  questId: V02
+                  x: 8
+                  "y": 2
+                rows:
+                - "############"
+                - "#..........#"
+                - "#..........#"
+                - "#..........#"
+                - "#..........#"
+                - "#..........#"
+                - "#####A######"
+                - "#..........B"
+                - "############"
+                width: 12
+              schema:
+                $ref: "#/components/schemas/WorldView"
+          description: The map.
+      summary: Get the world map
+      tags:
+      - world
+  /health:
+    get:
+      description: Returns UP together with how player code is run and how many quests
+        were loaded. Use it as a start-up check and to see whether the server runs
+        the safe Docker sandbox. It needs no player id and is not rate limited.
+      operationId: Health_health
+      responses:
+        "200":
+          content:
+            application/json:
+              example:
+                questsLoaded: 2
+                sandbox: docker
+                sandboxSafe: true
+                status: UP
+              schema:
+                $ref: "#/components/schemas/HealthView"
+          description: The server is up.
+      summary: Check that the server is up
+      tags:
+      - health
+components:
+  schemas:
+    CompletionView:
+      type: object
+      description: What the first successful submit of a quest earns. Present only
+        when the submit passed.
+      properties:
+        explanation:
+          type: string
+          description: Plain-language explanation of the concept.
+        firstCompletion:
+          type: boolean
+          description: True the first time this player completes the quest. XP is
+            only awarded then.
+        level:
+          type: integer
+          format: int32
+          description: Level after this submit.
+        levelUp:
+          type: boolean
+          description: True when this submit raised the level.
+        totalXp:
+          type: integer
+          format: int32
+          description: Total experience points after this submit.
+        unlockedQuestId:
+          type: string
+          description: "The quest that this completion unlocked, if any."
+        worldEffect:
+          allOf:
+          - $ref: "#/components/schemas/WorldEffect"
+          description: What happens to the world.
+        xpAwarded:
+          type: integer
+          format: int32
+          description: "Experience points awarded by this submit, zero on a repeat."
+      required:
+      - explanation
+      - firstCompletion
+      - level
+      - levelUp
+      - totalXp
+      - xpAwarded
+    ErrorBody:
+      type: object
+      description: What went wrong. Show message to the player; use code in programs.
+      properties:
+        code:
+          type: string
+          description: "A stable code in capital letters. The full list, with the\
+            \ HTTP status and cause of each, is in x-error-codes of this schema."
+          enum:
+          - BAD_REQUEST
+          - FORBIDDEN
+          - HINT_NOT_AVAILABLE
+          - INTERNAL
+          - NOT_FOUND
+          - NO_MORE_HINTS
+          - NO_NPC_ADJACENT
+          - PLAYER_NOT_FOUND
+          - QUEST_LOCKED
+          - QUEST_NOT_FOUND
+          - QUEST_PROFILE_UNSUPPORTED
+          - RATE_LIMITED
+          - RUN_IN_PROGRESS
+          - SERVER_BUSY
+          - SOURCE_TOO_LARGE
+        message:
+          type: string
+          description: A friendly sentence. It never contains internal details.
+      required:
+      - code
+      - message
+      x-error-codes:
+        BAD_REQUEST:
+          meaning: "The request was not understood, for example a malformed player\
+            \ id, a body that is not valid JSON, or a move with no directions. The\
+            \ method is wrong for the address (405) and a body that is not JSON (415)\
+            \ use this code too."
+          status: 400
+        FORBIDDEN:
+          meaning: The server only answers requests addressed to localhost when it
+            runs in the unsafe development mode.
+          status: 403
+        HINT_NOT_AVAILABLE:
+          meaning: Hints unlock after a failed submit. Try the quest first.
+          status: 409
+        INTERNAL:
+          meaning: Something went wrong on the server. Progress is not lost. The message
+            never contains details.
+          status: 500
+        NOT_FOUND:
+          meaning: There is no such address.
+          status: 404
+        NO_MORE_HINTS:
+          meaning: All hints of this quest are already unlocked.
+          status: 409
+        NO_NPC_ADJACENT:
+          meaning: No character is next to the hero. Walk next to one first.
+          status: 409
+        PLAYER_NOT_FOUND:
+          meaning: No player has this id. Create one with POST /api/v1/players.
+          status: 404
+        QUEST_LOCKED:
+          meaning: "The player has not completed the quest before this one, so this\
+            \ quest cannot be opened, run or submitted yet."
+          status: 403
+        QUEST_NOT_FOUND:
+          meaning: There is no quest with this id.
+          status: 404
+        QUEST_PROFILE_UNSUPPORTED:
+          meaning: The quest needs a sandbox profile that this server does not offer
+            yet.
+          status: 422
+        RATE_LIMITED:
+          meaning: "Too many requests from this address. Creating players, running\
+            \ and submitting have per-minute limits."
+          status: 429
+        RUN_IN_PROGRESS:
+          meaning: A run or submit of this player is still in progress. Wait for it
+            to finish.
+          status: 429
+        SERVER_BUSY:
+          meaning: The server is running as many sandboxes as it allows. Try again
+            in a moment.
+          status: 503
+        SOURCE_TOO_LARGE:
+          meaning: "The submitted code, or the whole request, is bigger than the limit\
+            \ (20000 characters of code, 64 KiB of request)."
+          status: 413
+    ErrorEnvelope:
+      type: object
+      description: Every failure of every operation has this shape.
+      properties:
+        error:
+          allOf:
+          - $ref: "#/components/schemas/ErrorBody"
+          description: The failure.
+      required:
+      - error
+    GateView:
+      type: object
+      description: A gate on the map. Gates are walls until the quest that opens them
+        is completed.
+      properties:
+        id:
+          type: string
+          description: "Gate id, one capital letter that also appears in the map rows."
+        x:
+          type: integer
+          format: int32
+          description: Column of the gate tile.
+        "y":
+          type: integer
+          format: int32
+          description: Row of the gate tile.
+      required:
+      - id
+      - x
+      - "y"
+    HealthView:
+      type: object
+      description: Whether the server is up and how it runs player code.
+      properties:
+        questsLoaded:
+          type: integer
+          format: int32
+          description: How many quests were loaded from the content files.
+        sandbox:
+          type: string
+          description: How player code is run. docker is the safe mode.
+        sandboxSafe:
+          type: boolean
+          description: True when player code runs in the isolated container.
+        status:
+          type: string
+          description: UP when the server answers.
+          enum:
+          - UP
+        warning:
+          type: string
+          description: A warning shown only when the sandbox mode is not the safe
+            one.
+      required:
+      - questsLoaded
+      - sandbox
+      - sandboxSafe
+      - status
+    HintResponse:
+      type: object
+      description: The next hint for a quest.
+      properties:
+        hint:
+          type: string
+          description: The hint text. Hints go from a nudge to nearly the answer.
+        hintNumber:
+          type: integer
+          format: int32
+          description: "Which hint this is, starting at 1."
+        hintsTotal:
+          type: integer
+          format: int32
+          description: How many hints the quest has.
+        hintsUnlocked:
+          type: integer
+          format: int32
+          description: How many hints are unlocked now.
+      required:
+      - hint
+      - hintNumber
+      - hintsTotal
+      - hintsUnlocked
+    InteractResponse:
+      type: object
+      description: "What the character next to the hero says, and the state of the\
+        \ quest they give."
+      properties:
+        lines:
+          type: array
+          description: What the character says. After the quest is completed these
+            are the thank-you lines.
+          items:
+            type: string
+        npcId:
+          type: string
+          description: Id of the character.
+        npcName:
+          type: string
+          description: Name of the character.
+        questId:
+          type: string
+          description: The quest this character gives.
+        questStatus:
+          type: string
+          description: State of that quest for this player.
+          enum:
+          - LOCKED
+          - AVAILABLE
+          - COMPLETED
+      required:
+      - lines
+      - npcId
+      - npcName
+      - questId
+      - questStatus
+    MoveRequest:
+      type: object
+      description: A walk made of single steps.
+      properties:
+        directions:
+          type: array
+          description: "The steps to take, in order. Each one is UP, DOWN, LEFT or\
+            \ RIGHT."
+          items:
+            type: string
+          maxItems: 32
+          minItems: 1
+      required:
+      - directions
+    MoveResponse:
+      type: object
+      description: Where the hero ended up after the steps.
+      properties:
+        applied:
+          type: integer
+          format: int32
+          description: How many of the steps were taken before the walk ended.
+        blocked:
+          type: boolean
+          description: "True when the walk stopped early because of a wall, a closed\
+            \ gate or a character."
+        x:
+          type: integer
+          format: int32
+          description: Column after the move.
+        "y":
+          type: integer
+          format: int32
+          description: Row after the move.
+      required:
+      - applied
+      - blocked
+      - x
+      - "y"
+    NpcView:
+      type: object
+      description: A character the player can talk to.
+      properties:
+        id:
+          type: string
+          description: Stable character id.
+        name:
+          type: string
+          description: Name to show.
+        questId:
+          type: string
+          description: The quest this character gives.
+        x:
+          type: integer
+          format: int32
+          description: Column of the character.
+        "y":
+          type: integer
+          format: int32
+          description: Row of the character.
+      required:
+      - id
+      - name
+      - questId
+      - x
+      - "y"
+    PlayerView:
+      type: object
+      description: "Everything the client needs to know about one player. The player\
+        \ id is the only credential, so keep it private."
+      properties:
+        completedQuestIds:
+          type: array
+          description: "Ids of the quests this player has completed, in completion\
+            \ order."
+          items:
+            type: string
+        hero:
+          allOf:
+          - $ref: "#/components/schemas/Point"
+          description: Where the hero stands.
+        level:
+          type: integer
+          format: int32
+          description: "Current level, derived from xp."
+        levelFloorXp:
+          type: integer
+          format: int32
+          description: Experience points at which the current level began.
+        nextLevelXp:
+          type: integer
+          format: int32
+          description: Experience points needed for the next level.
+        openGates:
+          type: array
+          description: Ids of the gates that are open for this player.
+          items:
+            type: string
+        playerId:
+          type: string
+          description: "The player id, a UUID. Use it in the address of every player\
+            \ operation."
+        worldEffects:
+          type: array
+          description: "The effects of the completed quests, in order, so the client\
+            \ can redraw the world."
+          items:
+            $ref: "#/components/schemas/WorldEffect"
+        xp:
+          type: integer
+          format: int32
+          description: Experience points earned so far.
+      required:
+      - completedQuestIds
+      - hero
+      - level
+      - levelFloorXp
+      - nextLevelXp
+      - openGates
+      - playerId
+      - worldEffects
+      - xp
+    Point:
+      type: object
+      description: "A tile position on the world map. x counts columns from the left,\
+        \ y counts rows from the top, both starting at 0."
+      properties:
+        x:
+          type: integer
+          format: int32
+          description: "Column, counted from the left starting at 0."
+        "y":
+          type: integer
+          format: int32
+          description: "Row, counted from the top starting at 0."
+      required:
+      - x
+      - "y"
+    QuestDetailView:
+      type: object
+      description: A quest as one player sees it. Fields marked as withheld stay empty
+        until the player has completed the quest.
+      properties:
+        concept:
+          type: string
+          description: The one Java concept the quest teaches.
+        explanation:
+          type: string
+          description: Plain-language explanation of the concept. Withheld until the
+            quest is completed.
+          x-withheld-until-completed: true
+        failedAttempts:
+          type: integer
+          format: int32
+          description: Failed submits so far. Hints become available after the first
+            failure.
+        goal:
+          type: string
+          description: What the player has to write.
+        hints:
+          type: array
+          description: "The unlocked hints, in order, easiest first."
+          items:
+            type: string
+        hintsTotal:
+          type: integer
+          format: int32
+          description: How many hints the quest has.
+        hintsUnlocked:
+          type: integer
+          format: int32
+          description: How many of them this player has unlocked.
+        id:
+          type: string
+          description: Quest id.
+        kind:
+          type: string
+          description: How the answer is graded. STDOUT grades what the program prints;
+            METHOD_RETURN grades the values that the player's methods return.
+          enum:
+          - STDOUT
+          - METHOD_RETURN
+        lastSource:
+          type: string
+          description: "The last code this player submitted or ran for this quest,\
+            \ so the editor can resume. Empty if none."
+        profile:
+          type: string
+          description: What the sandbox allows for this quest. Only BASIC is available
+            today.
+          enum:
+          - BASIC
+          - TESTING
+          - FILES
+          - THREADS
+          - BUILD
+          - SERVICE
+        referenceSolution:
+          type: string
+          description: A model solution. Withheld until the quest is completed.
+          x-withheld-until-completed: true
+        starterCode:
+          type: string
+          description: "Code to start from, as one string with line breaks."
+        status:
+          type: string
+          description: State for this player.
+          enum:
+          - LOCKED
+          - AVAILABLE
+          - COMPLETED
+        story:
+          type: string
+          description: "The story hook, shown before the goal."
+        title:
+          type: string
+          description: Quest title.
+        visibleTests:
+          type: array
+          description: The tests the player can see.
+          items:
+            $ref: "#/components/schemas/VisibleTestView"
+        worldEffect:
+          allOf:
+          - $ref: "#/components/schemas/WorldEffect"
+          description: What completing the quest does to the world. Withheld until
+            the quest is completed.
+          x-withheld-until-completed: true
+        xp:
+          type: integer
+          format: int32
+          description: Experience points the first completion awards.
+      required:
+      - concept
+      - failedAttempts
+      - goal
+      - hints
+      - hintsTotal
+      - hintsUnlocked
+      - id
+      - kind
+      - profile
+      - starterCode
+      - status
+      - story
+      - title
+      - visibleTests
+      - xp
+    QuestListResponse:
+      type: object
+      description: "All quests in teaching order, with the state of each for this\
+        \ player."
+      properties:
+        quests:
+          type: array
+          description: The quests in teaching order.
+          items:
+            $ref: "#/components/schemas/QuestSummary"
+      required:
+      - quests
+    QuestSummary:
+      type: object
+      description: One line of the quest list.
+      properties:
+        concept:
+          type: string
+          description: The one Java concept the quest teaches.
+        id:
+          type: string
+          description: Quest id such as V01. The letter is the region and the number
+            is the order.
+        region:
+          type: string
+          description: Region letter.
+        regionName:
+          type: string
+          description: Region name.
+        status:
+          type: string
+          description: State for this player.
+          enum:
+          - LOCKED
+          - AVAILABLE
+          - COMPLETED
+        title:
+          type: string
+          description: Quest title.
+        xp:
+          type: integer
+          format: int32
+          description: Experience points the first completion awards.
+      required:
+      - concept
+      - id
+      - region
+      - regionName
+      - status
+      - title
+      - xp
+    RunResponse:
+      type: object
+      description: "The result of a trial run. Only the visible tests are evaluated,\
+        \ nothing is saved as progress, and no hidden data is returned."
+      properties:
+        compilerOutput:
+          type: string
+          description: "The Java compiler output, empty when the code compiled."
+        durationMillis:
+          type: integer
+          format: int64
+          description: "How long the sandbox run took, in milliseconds."
+        friendlyHints:
+          type: array
+          description: "Plain-language advice for common mistakes, shown beside the\
+            \ real compiler or runtime output."
+          items:
+            type: string
+        passed:
+          type: boolean
+          description: True when every evaluated test passed.
+        questId:
+          type: string
+          description: The quest that was run.
+        scope:
+          type: string
+          description: Which tests were evaluated. Always VISIBLE for a run.
+          enum:
+          - VISIBLE
+          - ALL
+        status:
+          type: string
+          description: How the sandbox run ended.
+          enum:
+          - OK
+          - COMPILE_ERROR
+          - TIMEOUT
+          - OUTPUT_LIMIT
+          - MEMORY_LIMIT
+          - RUNTIME_ERROR
+          - SANDBOX_ERROR
+        stderr:
+          type: string
+          description: "What the program printed as errors, shortened to a safe length."
+        stdout:
+          type: string
+          description: "What the program printed, shortened to a safe length."
+        summary:
+          type: string
+          description: One friendly sentence about the result.
+        tests:
+          type: array
+          description: One entry per evaluated test.
+          items:
+            $ref: "#/components/schemas/TestResultView"
+      required:
+      - compilerOutput
+      - durationMillis
+      - friendlyHints
+      - passed
+      - questId
+      - scope
+      - status
+      - stderr
+      - stdout
+      - summary
+      - tests
+    SourceRequest:
+      type: object
+      description: The Java source the player wrote.
+      properties:
+        source:
+          type: string
+          description: "The complete source as one string, with line breaks. The class\
+            \ that runs is Main for quests that grade printed output and Solution\
+            \ for quests that grade returned values."
+          maxLength: 20000
+      required:
+      - source
+    SubmitResponse:
+      type: object
+      description: "The result of a graded submit. All tests, including hidden ones,\
+        \ are evaluated. A pass records progress and awards experience points."
+      properties:
+        compilerOutput:
+          type: string
+          description: "The Java compiler output, empty when the code compiled."
+        completion:
+          allOf:
+          - $ref: "#/components/schemas/CompletionView"
+          description: Present only when the submit passed. Empty otherwise.
+        durationMillis:
+          type: integer
+          format: int64
+          description: "How long the sandbox run took, in milliseconds."
+        friendlyHints:
+          type: array
+          description: Plain-language advice for common mistakes.
+          items:
+            type: string
+        passed:
+          type: boolean
+          description: True when every test passed.
+        questId:
+          type: string
+          description: The quest that was submitted.
+        scope:
+          type: string
+          description: Which tests were evaluated. Always ALL for a submit.
+          enum:
+          - VISIBLE
+          - ALL
+        status:
+          type: string
+          description: How the sandbox run ended.
+          enum:
+          - OK
+          - COMPILE_ERROR
+          - TIMEOUT
+          - OUTPUT_LIMIT
+          - MEMORY_LIMIT
+          - RUNTIME_ERROR
+          - SANDBOX_ERROR
+        stderr:
+          type: string
+          description: "What the program printed as errors, shortened to a safe length."
+        stdout:
+          type: string
+          description: "What the program printed, shortened to a safe length."
+        summary:
+          type: string
+          description: One friendly sentence about the result.
+        tests:
+          type: array
+          description: "One entry per test, hidden ones included but blanked."
+          items:
+            $ref: "#/components/schemas/TestResultView"
+      required:
+      - compilerOutput
+      - durationMillis
+      - friendlyHints
+      - passed
+      - questId
+      - scope
+      - status
+      - stderr
+      - stdout
+      - summary
+      - tests
+    TestResultView:
+      type: object
+      description: The outcome of one test. For hidden tests only the name and whether
+        it passed are shown.
+      properties:
+        actual:
+          type: string
+          description: What the program produced for a visible test. Never filled
+            for hidden tests.
+          x-never-shown-for-hidden-tests: true
+        expected:
+          type: string
+          description: The expected result of a visible test. Never filled for hidden
+            tests.
+          x-never-shown-for-hidden-tests: true
+        hidden:
+          type: boolean
+          description: True for tests the player cannot see before they submit.
+        message:
+          type: string
+          description: A short plain-language note about the outcome.
+        name:
+          type: string
+          description: What the test checks. Hidden tests are numbered instead of
+            named.
+        passed:
+          type: boolean
+          description: Whether the test passed.
+      required:
+      - hidden
+      - message
+      - name
+      - passed
+    VisibleTestView:
+      type: object
+      description: A test the player may see before submitting. Hidden tests are never
+        listed.
+      properties:
+        call:
+          type: string
+          description: "The call that is evaluated, for quests that grade returned\
+            \ values. Empty for quests that grade printed output."
+        expected:
+          type: string
+          description: The expected result. Empty for tests that check the shape of
+            the code instead of its result.
+        name:
+          type: string
+          description: "What the test checks, in words."
+      required:
+      - name
+    WorldEffect:
+      type: object
+      description: "A change to the world that a completed quest causes, shown to\
+        \ the player as a message."
+      properties:
+        message:
+          type: string
+          description: Text to show the player.
+        target:
+          type: string
+          description: "The id of the gate that is affected, as in WorldView.gates."
+        type:
+          type: string
+          description: What happens. Currently always OPEN_GATE.
+          enum:
+          - OPEN_GATE
+      required:
+      - message
+      - target
+      - type
+    WorldView:
+      type: object
+      description: The static map of the world. It is the same for every player; use
+        the player view for where this player stands and which gates are open.
+      properties:
+        gates:
+          type: array
+          description: All gates on the map.
+          items:
+            $ref: "#/components/schemas/GateView"
+        height:
+          type: integer
+          format: int32
+          description: Number of rows.
+        heroStart:
+          allOf:
+          - $ref: "#/components/schemas/Point"
+          description: Where new players start.
+        id:
+          type: string
+          description: World id.
+        legend:
+          type: object
+          additionalProperties:
+            type: string
+          description: "Meaning of each map character, for example # for wall and\
+            \ . for floor."
+        npcs:
+          type: array
+          description: All characters on the map.
+          items:
+            $ref: "#/components/schemas/NpcView"
+        rows:
+          type: array
+          description: "The map, one string per row. Each character is a tile and\
+            \ is explained in legend."
+          items:
+            type: string
+        width:
+          type: integer
+          format: int32
+          description: Number of columns.
+      required:
+      - gates
+      - height
+      - heroStart
+      - id
+      - legend
+      - npcs
+      - rows
+      - width
