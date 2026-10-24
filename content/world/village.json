@@ -1,0 +1,47 @@
+{
+  "id": "village",
+  "width": 12,
+  "height": 9,
+  "rows": [
+    "############",
+    "#..........#",
+    "#..........#",
+    "#..........#",
+    "#..........#",
+    "#..........#",
+    "#####A######",
+    "#..........B",
+    "############"
+  ],
+  "heroStart": {"x": 5, "y": 4},
+  "npcs": [
+    {
+      "id": "elder",
+      "name": "Elder Mira",
+      "x": 3,
+      "y": 2,
+      "questId": "V01",
+      "introLines": [
+        "Traveller! The north gate is sealed by an old spell.",
+        "Only a hero who can write their name in Java may pass."
+      ],
+      "completedLines": [
+        "The gate is open. You have a way with words, hero."
+      ]
+    },
+    {
+      "id": "smith",
+      "name": "Smith Orin",
+      "x": 8,
+      "y": 2,
+      "questId": "V02",
+      "introLines": [
+        "The four elements power my forge, but I cannot count them.",
+        "Show me how Java stores numbers."
+      ],
+      "completedLines": [
+        "The east gate is open. Fire, water, earth and air are in balance."
+      ]
+    }
+  ]
+}

@@ -1,0 +1,47 @@
+{
+  "id": "V01",
+  "region": "V",
+  "title": "The Adventurer's Name",
+  "concept": "Variables and String",
+  "story": "Elder Mira squints at you. \"A hero with no name cannot cross the gate. Write it down in Java, and say it aloud.\"",
+  "goal": "Create a String variable called name holding \"Adventurer\", then print Hello, Adventurer! using System.out.println and your variable.",
+  "kind": "STDOUT",
+  "starterCode": [
+    "public class Main {",
+    "    public static void main(String[] args) {",
+    "        // TODO 1: create a String variable called name that holds \"Adventurer\"",
+    "        // TODO 2: print \"Hello, \" + name + \"!\" with System.out.println",
+    "    }",
+    "}"
+  ],
+  "profile": "BASIC",
+  "visibleTests": [
+    {"name": "prints the greeting", "expected": "Hello, Adventurer!", "match": "EXACT_TRIMMED"},
+    {"name": "declares a String variable called name", "expected": "\\bString\\s+name\\s*=", "match": "SOURCE_REGEX"}
+  ],
+  "hiddenTests": [
+    {"name": "exact output", "expected": "Hello, Adventurer!", "match": "EXACT_TRIMMED"},
+    {"name": "uses println", "expected": "System\\s*\\.\\s*out\\s*\\.\\s*println\\s*\\(", "match": "SOURCE_REGEX"},
+    {"name": "prints the variable, not a hard-coded text", "expected": "println\\s*\\(.*\\bname\\b", "match": "SOURCE_REGEX"}
+  ],
+  "hints": [
+    "A variable is a labelled box. The type String is the box for text.",
+    "Declare it like this: String name = \"Adventurer\"; then join texts with +.",
+    "System.out.println(\"Hello, \" + name + \"!\"); goes on the line after the declaration."
+  ],
+  "referenceSolution": [
+    "public class Main {",
+    "    public static void main(String[] args) {",
+    "        String name = \"Adventurer\";",
+    "        System.out.println(\"Hello, \" + name + \"!\");",
+    "    }",
+    "}"
+  ],
+  "explanation": "String name = \"Adventurer\"; creates a variable: a named place in memory that holds text. System.out.println prints text followed by a new line, and + joins texts together.",
+  "commonMistakes": [
+    {"source": "COMPILER", "pattern": "';' expected", "message": "Every Java statement ends with a semicolon."},
+    {"source": "STDOUT", "pattern": "(?i)hello,? adventurer", "message": "Close! Check capital letters, the comma after Hello and the exclamation mark."},
+    {"source": "SOURCE", "pattern": "System\\.out\\.print\\s*\\(", "message": "You used print; println also adds the new line the tests expect."}
+  ],
+  "worldEffect": {"type": "OPEN_GATE", "target": "A", "message": "The north gate creaks open."}
+}
