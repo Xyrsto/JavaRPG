@@ -46,6 +46,7 @@ class DockerCompileTimeoutTest {
         Path shim = Files.createTempDirectory("jr-ct-shim");
         Files.writeString(input.resolve("Main.java"), "public class Main { public static void main(String[] a) { } }");
         Files.writeString(shim.resolve("javac"), "#!/bin/sh\nexec sleep 60\n", StandardCharsets.UTF_8);
+        makeReadableByContainerUser(input, shim);
 
         List<String> command = List.of("docker", "run", "--rm", "--network", "none", "--read-only", "--cap-drop", "ALL",
                 "--user", "65534:65534", "--tmpfs", "/work:rw,noexec,nosuid,size=32m,mode=1777",
