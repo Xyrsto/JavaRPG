@@ -10,3 +10,4 @@ class DrillFailTest {
         assertEquals(1, 2, "CI drill: this test fails on purpose");
     }
 }
+// second commit pushed while the first run is in progress (drill D5)
