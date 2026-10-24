@@ -1,0 +1,16 @@
+title: JavaRPG
+description: A browser RPG where you learn Java by writing real Java code. Documentation of the game server and its API.
+theme: minima
+baseurl: /JavaRPG
+url: https://xyrsto.github.io
+header_pages:
+  - index.md
+  - quick-start.md
+  - concepts.md
+  - api/index.md
+  - ci.md
+plugins:
+  - jekyll-relative-links
+relative_links:
+  enabled: true
+  collections: false

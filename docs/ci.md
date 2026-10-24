@@ -1,6 +1,10 @@
+---
+title: Continuous integration
+---
+
 # Continuous integration
 
-Every pull request and every push to `main` runs the `CI` workflow ([`.github/workflows/ci.yml`](../.github/workflows/ci.yml)). It has two independent jobs. **Keep the job names `verify` and `docker-tests` stable**: branch protection and the README badge refer to them.
+Every pull request and every push to `main` runs the `CI` workflow ([`.github/workflows/ci.yml`](https://github.com/Xyrsto/JavaRPG/blob/main/.github/workflows/ci.yml)). It has two independent jobs. **Keep the job names `verify` and `docker-tests` stable**: branch protection and the README badge refer to them.
 
 | Check | What it does | Typical time |
 |---|---|---|
@@ -19,10 +23,10 @@ To re-run: open the run and choose **Re-run failed jobs**. A test that passes on
 - Only GitHub-maintained actions (`checkout`, `setup-java`, `upload-artifact`), pinned to a major version.
 - Hostile test fixtures run only inside the sandbox container on a throwaway GitHub-hosted VM.
 
-## Branch protection (current state: not enforceable)
-The repository is **private on the GitHub Free plan**, and GitHub does not offer branch protection or rulesets there (the API answers "Upgrade to GitHub Pro or make this repository public"). Until that changes the two checks are **advisory**: they report on every pull request, but nothing stops a merge when they are red. Merge only when both are green.
+## Branch protection
+The repository is **public**, so GitHub offers branch protection for free. The settings below are **not applied automatically**: until the owner applies them the two checks are **advisory**. They report on every pull request, but nothing stops a merge when they are red, so merge only when both are green.
 
-When the repository becomes public, or the account moves to GitHub Pro or higher, apply these settings (**Settings > Branches > Add branch protection rule**, or **Settings > Rules > Rulesets**):
+To enforce the checks, apply these settings (**Settings > Branches > Add branch protection rule**, or **Settings > Rules > Rulesets**):
 
 1. Branch name pattern: `main`.
 2. Require a pull request before merging.
@@ -45,4 +49,4 @@ JSON
 ```
 
 ## Build status badge
-The README badge shows the latest `CI` run on `main`. The repository is private, so the badge image only renders for people signed in to GitHub with access.
+The README badge shows the latest `CI` run on `main`. It also shows on the documentation site.

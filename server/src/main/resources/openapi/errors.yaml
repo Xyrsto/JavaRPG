@@ -29,7 +29,7 @@ RUN_IN_PROGRESS:
   meaning: A run or submit of this player is still in progress. Wait for it to finish.
 SERVER_BUSY:
   status: 503
-  meaning: The server is running as many sandboxes as it allows. Try again in a moment.
+  meaning: The server is running as many sandboxes as it allows, or already holds as many players as it allows. Try again in a moment.
 NO_NPC_ADJACENT:
   status: 409
   meaning: No character is next to the hero. Walk next to one first.

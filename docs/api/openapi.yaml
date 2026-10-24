@@ -1001,8 +1001,8 @@ components:
             to finish.
           status: 429
         SERVER_BUSY:
-          meaning: The server is running as many sandboxes as it allows. Try again
-            in a moment.
+          meaning: "The server is running as many sandboxes as it allows, or already\
+            \ holds as many players as it allows. Try again in a moment."
           status: 503
         SOURCE_TOO_LARGE:
           meaning: "The submitted code, or the whole request, is bigger than the limit\
