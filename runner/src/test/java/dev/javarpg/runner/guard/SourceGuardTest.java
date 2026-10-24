@@ -32,7 +32,8 @@ class SourceGuardTest {
         "System.setSecurityManager(null);",
         "java.lang.invoke.MethodHandle h = null;",
         "sun.misc.Unsafe u = null;",
-        "javax.tools.ToolProvider.getSystemJavaCompiler();"
+        "javax.tools.ToolProvider.getSystemJavaCompiler();",
+        "java.util.function.IntConsumer e = System::exit;"
     })
     void rejectsDangerousCode(String body) {
         SourceGuard.Verdict v = SourceGuard.check(mainWith(body), Profile.BASIC);
@@ -122,5 +123,18 @@ class SourceGuardTest {
         String reason = SourceGuard.check(mainWith("System.exit(0);"), Profile.BASIC).reason();
         assertFalse(reason.isBlank());
         assertFalse(reason.contains("Exception"));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"Character", "StringBuilder", "System", "String", "java", "Object"})
+    void rejectsPlayerTypesThatShadowJavaLang(String name) {
+        String source = "public class Main {\n    public static void main(String[] args) { }\n}\nclass " + name + " { }\n";
+        assertFalse(SourceGuard.check(source, Profile.BASIC).allowed(), name);
+    }
+
+    @Test
+    void allowsOrdinaryHelperClassNames() {
+        String source = "public class Main {\n    public static void main(String[] args) { }\n}\nclass Potion { }\n";
+        assertTrue(SourceGuard.check(source, Profile.BASIC).allowed());
     }
 }
