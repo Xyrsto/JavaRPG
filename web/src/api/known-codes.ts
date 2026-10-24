@@ -1,0 +1,23 @@
+/**
+ * Every error code of the game API, as listed in x-error-codes of docs/api/openapi.yaml. A test keeps this list
+ * equal to the description. Codes the client does not know still become api failures (see errors.ts).
+ */
+export const ERROR_CODES = [
+  'BAD_REQUEST',
+  'PLAYER_NOT_FOUND',
+  'QUEST_NOT_FOUND',
+  'QUEST_LOCKED',
+  'QUEST_PROFILE_UNSUPPORTED',
+  'SOURCE_TOO_LARGE',
+  'HINT_NOT_AVAILABLE',
+  'NO_MORE_HINTS',
+  'RUN_IN_PROGRESS',
+  'SERVER_BUSY',
+  'NO_NPC_ADJACENT',
+  'INTERNAL',
+  'NOT_FOUND',
+  'FORBIDDEN',
+  'RATE_LIMITED',
+] as const;
+
+export type ErrorCode = (typeof ERROR_CODES)[number];
