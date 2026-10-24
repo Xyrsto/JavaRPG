@@ -1,0 +1,47 @@
+# HTTP status and plain meaning of each error code. The statuses are checked against the real server by
+# ErrorCodesDocumentedTest. Codes of the ErrorCode enum plus the ones written by the web layer.
+BAD_REQUEST:
+  status: 400
+  meaning: The request was not understood, for example a malformed player id, a body that is not valid JSON, or a move with no directions. The method is wrong for the address (405) and a body that is not JSON (415) use this code too.
+PLAYER_NOT_FOUND:
+  status: 404
+  meaning: No player has this id. Create one with POST /api/v1/players.
+QUEST_NOT_FOUND:
+  status: 404
+  meaning: There is no quest with this id.
+QUEST_LOCKED:
+  status: 403
+  meaning: The player has not completed the quest before this one, so this quest cannot be opened, run or submitted yet.
+QUEST_PROFILE_UNSUPPORTED:
+  status: 422
+  meaning: The quest needs a sandbox profile that this server does not offer yet.
+SOURCE_TOO_LARGE:
+  status: 413
+  meaning: The submitted code, or the whole request, is bigger than the limit (20000 characters of code, 64 KiB of request).
+HINT_NOT_AVAILABLE:
+  status: 409
+  meaning: Hints unlock after a failed submit. Try the quest first.
+NO_MORE_HINTS:
+  status: 409
+  meaning: All hints of this quest are already unlocked.
+RUN_IN_PROGRESS:
+  status: 429
+  meaning: A run or submit of this player is still in progress. Wait for it to finish.
+SERVER_BUSY:
+  status: 503
+  meaning: The server is running as many sandboxes as it allows, or already holds as many players as it allows. Try again in a moment.
+NO_NPC_ADJACENT:
+  status: 409
+  meaning: No character is next to the hero. Walk next to one first.
+INTERNAL:
+  status: 500
+  meaning: Something went wrong on the server. Progress is not lost. The message never contains details.
+NOT_FOUND:
+  status: 404
+  meaning: There is no such address.
+FORBIDDEN:
+  status: 403
+  meaning: The server only answers requests addressed to localhost when it runs in the unsafe development mode.
+RATE_LIMITED:
+  status: 429
+  meaning: Too many requests from this address. Creating players, running and submitting have per-minute limits.
