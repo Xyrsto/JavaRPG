@@ -40,14 +40,14 @@ class HarnessGeneratorTest {
         String src = HarnessGenerator.generate(List.of("Solution.add(2, 3)"));
         int secure = src.indexOf("new java.security.SecureRandom()");
         int printNonce = src.indexOf("out.println(nonce);");
-        int setOut = src.indexOf("System.setOut(sink);");
-        int setErr = src.indexOf("System.setErr(sink);");
+        int setOut = src.indexOf("java.lang.System.setOut(sink);");
+        int setErr = src.indexOf("java.lang.System.setErr(sink);");
         int firstCall = src.indexOf("show(Solution.add");
         assertTrue(secure > 0 && secure < printNonce);
         assertTrue(printNonce < setOut && setOut < firstCall);
         assertTrue(setErr < firstCall);
-        assertTrue(src.contains("java.io.PrintStream out = System.out;"));
-        assertTrue(src.indexOf("java.io.PrintStream out = System.out;") < secure);
+        assertTrue(src.contains("java.io.PrintStream out = java.lang.System.out;"));
+        assertTrue(src.indexOf("java.io.PrintStream out = java.lang.System.out;") < secure);
         assertFalse(src.contains("@@JR|"));
         assertFalse(java.util.regex.Pattern.compile("[0-9a-f]{32}").matcher(src).find());
         assertEquals(src, HarnessGenerator.generate(List.of("Solution.add(2, 3)")));

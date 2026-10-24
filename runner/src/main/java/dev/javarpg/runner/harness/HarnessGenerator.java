@@ -53,19 +53,19 @@ public final class HarnessGenerator {
         src.append("public class JrHarness {\n");
         src.append("    public static void main(String[] args) {\n");
         // Saved before any player class is initialised (Solution initialises lazily at its first call).
-        src.append("        java.io.PrintStream out = System.out;\n");
+        src.append("        java.io.PrintStream out = java.lang.System.out;\n");
         src.append("        byte[] raw = new byte[16];\n");
         src.append("        new java.security.SecureRandom().nextBytes(raw);\n");
-        src.append("        StringBuilder hex = new StringBuilder();\n");
+        src.append("        java.lang.StringBuilder hex = new java.lang.StringBuilder();\n");
         src.append("        for (byte b : raw) {\n");
-        src.append("            hex.append(Character.forDigit((b >> 4) & 15, 16)).append(Character.forDigit(b & 15, 16));\n");
+        src.append("            hex.append(java.lang.Character.forDigit((b >> 4) & 15, 16)).append(java.lang.Character.forDigit(b & 15, 16));\n");
         src.append("        }\n");
         src.append("        String nonce = hex.toString();\n");
         src.append("        out.println(nonce);\n");
         src.append("        out.flush();\n");
         src.append("        java.io.PrintStream sink = new java.io.PrintStream(java.io.OutputStream.nullOutputStream());\n");
-        src.append("        System.setOut(sink);\n");
-        src.append("        System.setErr(sink);\n");
+        src.append("        java.lang.System.setOut(sink);\n");
+        src.append("        java.lang.System.setErr(sink);\n");
         for (int i = 0; i < calls.size(); i++) {
             String call = checkCall(calls.get(i));
             src.append("        try { String v = show(").append(call).append("); out.println(\"@@JR-\" + nonce + \"|")

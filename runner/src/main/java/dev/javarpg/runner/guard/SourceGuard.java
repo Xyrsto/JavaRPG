@@ -33,6 +33,12 @@ public final class SourceGuard {
     private static final List<Rule> RULES = List.of(
         rule("\\bSystem\\s*\\.\\s*(?:(?:exit|halt|in|load|loadLibrary|getenv|setIn|setOut|setErr|setSecurityManager)\\b|\\*)",
              "System.exit, System.in and other system calls are not allowed in this quest."),
+        rule("\\bSystem\\s*::",
+             "System method references are not allowed in this quest."),
+        // The harness is compiled in the same package as player code; a player type with one of these
+        // names would shadow the java.lang type (or the java package) the harness relies on.
+        rule("\\b(?:class|interface|enum|record)\\s+(?:java|javax|jdk|Object|String|StringBuilder|Character|System|Throwable|Class|Integer|Math)\\b",
+             "That name is reserved by Java. Pick a different name for your class."),
         rule("\\bimport\\s+static\\b",
              "Static imports are not allowed in this quest. Write the full name, like Math.max(...)."),
         rule("\\bRuntime\\b",
