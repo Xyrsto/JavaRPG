@@ -67,6 +67,7 @@
                 </executions>
                 <configuration>
                     <mainClass>dev.javarpg.server.JavaRpgApplication</mainClass>
+                    <workingDirectory>${project.basedir}/..</workingDirectory>
                 </configuration>
             </plugin>
         </plugins>
