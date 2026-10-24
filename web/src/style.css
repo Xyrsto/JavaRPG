@@ -1,0 +1,46 @@
+:root {
+  color-scheme: light dark;
+  --text: #14171a;
+  --page: #ffffff;
+  --accent: #0b4f9c;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --text: #eef1f4;
+    --page: #14171a;
+    --accent: #8cc4ff;
+  }
+}
+
+body {
+  margin: 0;
+  background: var(--page);
+  color: var(--text);
+  font: 1.125rem/1.6 system-ui, sans-serif;
+}
+
+main {
+  max-width: 40rem;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+}
+
+.skip {
+  position: absolute;
+  left: 1rem;
+  top: -4rem;
+  padding: 0.5rem 1rem;
+  background: var(--page);
+  color: var(--accent);
+  border: 2px solid var(--accent);
+}
+
+.skip:focus {
+  top: 1rem;
+}
+
+:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}

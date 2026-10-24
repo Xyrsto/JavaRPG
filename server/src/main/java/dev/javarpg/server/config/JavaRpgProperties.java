@@ -16,6 +16,7 @@ public class JavaRpgProperties {
     private final Http http = new Http();
     private final Rate rate = new Rate();
     private final Players players = new Players();
+    private final Web web = new Web();
 
     public Content getContent() {
         return content;
@@ -47,6 +48,10 @@ public class JavaRpgProperties {
 
     public Players getPlayers() {
         return players;
+    }
+
+    public Web getWeb() {
+        return web;
     }
 
     /**
@@ -166,6 +171,19 @@ public class JavaRpgProperties {
 
         public void setMaxBodyBytes(long maxBodyBytes) {
             this.maxBodyBytes = maxBodyBytes;
+        }
+    }
+
+    /** javarpg.web.* Where the web client's page is found; the root address serves it when it exists. */
+    public static class Web {
+        private String index = "classpath:/static/index.html";
+
+        public String getIndex() {
+            return index;
+        }
+
+        public void setIndex(String index) {
+            this.index = index;
         }
     }
 

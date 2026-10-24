@@ -51,7 +51,7 @@ mvn -q -pl server spring-boot:run              # start the API on http://127.0.0
 
 Check it is up with `curl http://127.0.0.1:8080/health`.
 
-Documentation (overview, quick start, concepts and the API reference): [docs/index.md](docs/index.md), published at https://xyrsto.github.io/JavaRPG/. A running server serves a page to try every API call at `/docs` and the machine-readable description at `/v3/api-docs.yaml`; the committed copy is [docs/api/openapi.yaml](docs/api/openapi.yaml). CI checks and branch protection are described in [docs/ci.md](docs/ci.md).
+Documentation (overview, quick start, concepts and the API reference): [docs/index.md](docs/index.md), published at https://xyrsto.github.io/JavaRPG/. A running server serves a page to try every API call at `/docs` and the machine-readable description at `/v3/api-docs.yaml`; the committed copy is [docs/api/openapi.yaml](docs/api/openapi.yaml). The web client (`web/`) is described in [docs/web.md](docs/web.md): `npm run dev` for development, and `mvn -q -Pweb -pl server -am package -DskipTests` packs it into the server. CI checks and branch protection are described in [docs/ci.md](docs/ci.md).
 
 ## Safety
 
