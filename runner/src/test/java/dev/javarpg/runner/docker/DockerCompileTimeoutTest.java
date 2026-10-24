@@ -7,6 +7,7 @@ import dev.javarpg.runner.harness.HarnessProtocol;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.PosixFilePermissions;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
@@ -20,6 +21,24 @@ import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
  */
 @EnabledIfSystemProperty(named = "docker.tests", matches = "true")
 class DockerCompileTimeoutTest {
+
+    /**
+     * The container runs as uid 65534. Temp directories are created owner-only (700), which that user
+     * cannot enter on a Linux host (Windows bind mounts ignore Unix permissions and hide the problem).
+     */
+    private static void makeReadableByContainerUser(Path... dirs) throws Exception {
+        if (!Files.getFileStore(dirs[0]).supportsFileAttributeView("posix")) {
+            return;
+        }
+        for (Path dir : dirs) {
+            Files.setPosixFilePermissions(dir, PosixFilePermissions.fromString("rwxr-xr-x"));
+            try (var files = Files.list(dir)) {
+                for (Path file : files.toList()) {
+                    Files.setPosixFilePermissions(file, PosixFilePermissions.fromString("rwxr-xr-x"));
+                }
+            }
+        }
+    }
 
     @Test
     void aJavacThatNeverReturnsEndsAsExit102WithTheFixedMessage() throws Exception {
