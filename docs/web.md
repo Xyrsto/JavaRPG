@@ -29,7 +29,7 @@ Run these in the `web/` folder.
 To check a production build: `npm run build` and then `node scripts/check-dist.mjs`, which fails on any reference to another site or when the compressed size goes over 150 KB.
 
 ### Pointing the client at another server
-The client talks to the **same address as the page** by default, so nothing needs configuring. In development the proxy target is `http://127.0.0.1:8080`; to use another one, set `VITE_PROXY_TARGET` before `npm run dev`. To make a build call a server at a different address, set `VITE_API_BASE` (this needs that server to allow the page's origin, see below).
+The client talks to the **same address as the page** by default, so nothing needs configuring. In development the proxy target is `http://127.0.0.1:8080`; to use another one, set `VITE_PROXY_TARGET` before `npm run dev`. To make a build call a server at a different address, set `VITE_API_BASE` (this needs that server to allow the page's origin, see below). A page that is served by the game server itself cannot call another origin: its Content-Security-Policy only allows its own address, so this setting is for a client served from somewhere else.
 
 ## Delivered by the game server
 The server serves the client at its root address, so a player opens one address and nothing else needs hosting. To pack the client into the server, ask for it explicitly:
@@ -38,7 +38,7 @@ The server serves the client at its root address, so a player opens one address 
 mvn -q -Pweb -pl server -am package -DskipTests
 ```
 
-This runs `npm ci` and `npm run build` in `web/` and copies `dist/` into the jar under `static/`. Without `-Pweb` the build is unchanged, and the server then shows a short page at its root address saying that the client is not built, with links to this documentation and to the interactive API page.
+This runs `npm ci` and `npm run build` in `web/` and copies `dist/` into the jar under `static/`. On Windows it calls `npm.cmd` automatically; if your npm has another name or location, pass `-Dnpm.executable=<path>`. Without `-Pweb` the build is unchanged, and the server then shows a short page at its root address saying that the client is not built, with links to this documentation and to the interactive API page.
 
 What the server adds for the client's files (and only for them, never for the API, health, documentation or the API description):
 - `Content-Security-Policy` that allows nothing from other sites and no inline script, plus `X-Content-Type-Options: nosniff` and `Referrer-Policy: no-referrer`;

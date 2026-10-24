@@ -2,9 +2,10 @@
 // compressed size must stay inside the budget. Run after `npm run build`.
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { gzipSync } from 'node:zlib';
 
-const dist = new URL('../dist', import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1');
+const dist = fileURLToPath(new URL('../dist', import.meta.url));
 const BUDGET_BYTES = 150 * 1024;
 // XML namespaces are identifiers, not requests.
 const ALLOWED = [/^https?:\/\/www\.w3\.org\//];
@@ -22,7 +23,9 @@ for (const file of files(dist)) {
   const bytes = readFileSync(file);
   total += gzipSync(bytes).length;
   if (/\.(html|js|css|svg|json|map)$/.test(file)) {
-    for (const match of bytes.toString('utf8').matchAll(/https?:\/\/[^\s"'`)<>]+/g)) {
+    // Absolute (http, https) and protocol-relative (//host.tld) references.
+    const reference = /(?:https?:\/\/|(?<=["'(=\s])\/\/(?=[A-Za-z0-9-]+\.))[^\s"'`)<>]+/g;
+    for (const match of bytes.toString('utf8').matchAll(reference)) {
       if (!ALLOWED.some((ok) => ok.test(match[0]))) {
         problems.push(`${file}: reference to another site: ${match[0]}`);
       }
