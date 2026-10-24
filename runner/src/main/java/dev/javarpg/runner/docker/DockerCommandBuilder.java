@@ -67,8 +67,6 @@ public final class DockerCommandBuilder {
         args.add("--init");
         args.add("--log-driver");
         args.add("none");
-        args.add("--network");
-        args.add("none");
         args.add("--read-only");
         args.add("--cap-drop");
         args.add("ALL");
