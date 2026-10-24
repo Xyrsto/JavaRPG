@@ -67,6 +67,7 @@ class DockerHarnessTest {
         assertFalse(r.compilerOutput().contains("2147483647"));
     }
 
+    // Current javac rejects this source in ~1 s, so it does not prove the timeout; DockerCompileTimeoutTest does.
     @Test
     void pathologicalSourceIsBoundedByTheJavacTimeout() {
         SandboxResult r = run(EscapeFixtures.source("compile-hang"));
