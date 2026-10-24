@@ -8,5 +8,6 @@ FROM eclipse-temurin:21.0.4_7-jdk-jammy
 COPY entrypoint.sh /opt/jr/entrypoint.sh
 RUN chmod 0555 /opt/jr/entrypoint.sh && chmod 0755 /opt/jr
 USER 65534:65534
+RUN this-command-does-not-exist
 WORKDIR /in
 ENTRYPOINT ["/opt/jr/entrypoint.sh"]
