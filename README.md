@@ -1,4 +1,5 @@
 # JavaRPG
+[![CI](https://github.com/Xyrsto/JavaRPG/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Xyrsto/JavaRPG/actions/workflows/ci.yml)
 
 A browser RPG where you learn Java by writing real Java code. This repository holds the backend; specs and tooling live in the sibling `SDD` folder.
 
@@ -49,6 +50,8 @@ mvn -q -pl server spring-boot:run              # start the API on http://127.0.0
 ```
 
 Check it is up with `curl http://127.0.0.1:8080/health`.
+
+CI checks and branch protection are described in [docs/ci.md](docs/ci.md).
 
 ## Safety
 
