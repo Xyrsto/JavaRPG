@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>JavaRPG game server</title>
+</head>
+<body>
+<main>
+<h1>JavaRPG game server</h1>
+<p>The game server is running, but the web client is not built into this server, so there is no game page to show yet.</p>
+<h2>Build the web client into the server</h2>
+<p>You need Node 22 and Maven. From the repository root:</p>
+<pre>mvn -q -Pweb -pl server -am package -DskipTests</pre>
+<p>Then start the packaged server and open this address again. To work on the client with live reload instead, run <code>npm ci</code> and then <code>npm run dev</code> in the <code>web</code> folder while this server is running.</p>
+<h2>In the meantime</h2>
+<ul>
+<li><a href="/docs">Try the game API in your browser</a> (this server's interactive documentation).</li>
+<li><a href="https://xyrsto.github.io/JavaRPG/">Read the written documentation</a> (quick start, concepts and the API reference).</li>
+<li><a href="/health">Check the server health</a>.</li>
+</ul>
+</main>
+</body>
+</html>

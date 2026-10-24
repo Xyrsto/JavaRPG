@@ -43,7 +43,9 @@ class OperationCoverageTest {
         for (var entry : mappings.getHandlerMethods().entrySet()) {
             RequestMappingInfo info = entry.getKey();
             HandlerMethod handler = entry.getValue();
-            if (!handler.getBeanType().getPackageName().equals("dev.javarpg.server.controller")) {
+            // The root page of the web client is not an operation of the game API (springdoc.paths-to-match).
+            if (!handler.getBeanType().getPackageName().equals("dev.javarpg.server.controller")
+                    || handler.getBeanType().getSimpleName().equals("RootController")) {
                 continue;
             }
             for (String pattern : info.getPathPatternsCondition().getPatternValues()) {
