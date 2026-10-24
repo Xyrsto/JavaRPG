@@ -1,5 +1,6 @@
 package dev.javarpg.server.filter;
 
+import dev.javarpg.core.contract.ErrorCode;
 import dev.javarpg.server.config.JavaRpgProperties;
 import dev.javarpg.server.exception.BodyTooLargeException;
 import jakarta.servlet.FilterChain;
@@ -21,7 +22,6 @@ import org.springframework.web.filter.OncePerRequestFilter;
 @Order(Ordered.HIGHEST_PRECEDENCE + 20)
 public class BodySizeLimitFilter extends OncePerRequestFilter {
 
-    static final String CODE = "SOURCE_TOO_LARGE";
     static final String MESSAGE = "That request is too large. Send less data.";
 
     private final JavaRpgProperties props;
@@ -51,6 +51,6 @@ public class BodySizeLimitFilter extends OncePerRequestFilter {
     }
 
     private static void tooLarge(HttpServletResponse response) throws IOException {
-        FilterErrors.write(response, HttpServletResponse.SC_REQUEST_ENTITY_TOO_LARGE, CODE, MESSAGE);
+        FilterErrors.write(response, ErrorCode.SOURCE_TOO_LARGE, MESSAGE);
     }
 }

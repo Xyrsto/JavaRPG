@@ -6,8 +6,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import dev.javarpg.core.contract.ErrorCode;
+import dev.javarpg.server.exception.ErrorStatus;
 import dev.javarpg.server.support.TestSupport;
-import java.lang.reflect.Method;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
@@ -23,7 +23,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
 /**
- * FR-003: the documented error codes are exactly the ones the server can produce, each with the status it
+ * FR-003: the documented error codes are exactly the ErrorCode enum, each with the status it
  * really answers. Codes this test cannot reach through the API must be listed with the test that covers them.
  */
 @SpringBootTest
@@ -31,8 +31,6 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 @ActiveProfiles("test")
 class ErrorCodesDocumentedTest {
 
-    /** Codes written by the exception handler for unknown addresses and by the servlet filters. */
-    private static final Map<String, Integer> NON_ENUM_CODES = Map.of("NOT_FOUND", 404, "FORBIDDEN", 403, "RATE_LIMITED", 429);
 
     /** Reachable only with a special server state; the named existing test covers each. */
     private static final Map<String, String> COVERED_ELSEWHERE = Map.of(
@@ -54,11 +52,11 @@ class ErrorCodesDocumentedTest {
     }
 
     @Test
-    void theDocumentedCodesAreTheEnumPlusTheHttpLevelCodes() throws Exception {
+    void theDocumentedCodesAreExactlyTheEnum() throws Exception {
         JsonNode spec = OpenApiFixture.spec(mvc);
         Set<String> enumValues = new TreeSet<>();
         spec.at("/components/schemas/ErrorBody/properties/code/enum").forEach(n -> enumValues.add(n.asText()));
-        Set<String> expected = new TreeSet<>(NON_ENUM_CODES.keySet());
+        Set<String> expected = new TreeSet<>();
         for (ErrorCode code : ErrorCode.values()) {
             expected.add(code.name());
         }
@@ -71,14 +69,10 @@ class ErrorCodesDocumentedTest {
     @Test
     void theDocumentedStatusOfEveryCodeIsTheOneTheServerUses() throws Exception {
         JsonNode table = codeTable();
-        Method statusFor = Class.forName("dev.javarpg.server.exception.ApiExceptionHandler")
-                .getDeclaredMethod("statusFor", ErrorCode.class);
-        statusFor.setAccessible(true);
         for (ErrorCode code : ErrorCode.values()) {
-            HttpStatus status = (HttpStatus) statusFor.invoke(null, code);
+            HttpStatus status = ErrorStatus.of(code);
             assertEquals(status.value(), table.get(code.name()).get("status").asInt(), code.name());
         }
-        NON_ENUM_CODES.forEach((code, status) -> assertEquals(status, table.get(code).get("status").asInt(), code));
         table.forEach(entry -> assertTrue(entry.path("meaning").asText().length() > 15, "each code needs a plain meaning"));
     }
 
