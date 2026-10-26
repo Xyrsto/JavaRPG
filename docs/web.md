@@ -50,6 +50,20 @@ The page, the files and the API all come from the same address, in development (
 ## Supported browsers
 The current and the previous major version of Chrome, Edge, Firefox and Safari on desktop. The build targets ES2022, which covers them.
 
+## The world and the controls
+The map comes from the server's world answer and nothing about it is built into the client: the rows of characters, their meaning, the gates, the characters and the starting position all arrive from the server, so new content needs no client change. The whole map is always visible at once — there is no view that follows the hero — and everything on it is told apart by shape or by a letter, never by colour alone.
+
+Click the map or reach it with the Tab key to give it focus, then walk with the **arrow keys** or **W, A, S, D**. The keys are read by physical position, so a player on an AZERTY keyboard gets the same finger positions without configuring anything. Holding a key walks at a steady pace the game sets, not at the computer's own key-repeat rate, so movement feels the same everywhere. There is no diagonal movement, because the server only knows four directions. The movement keys work only while the map has focus, which is what will later let the arrows mean "move the cursor" inside the code editor.
+
+**The page moves first, the server decides.** The hero moves the instant a key is pressed, using the client's own copy of the server's rule for which tiles can be entered; every answer from the server then settles where the hero really is. Where the two disagree the hero is placed where the server says, as a visible jump rather than a glide, because gliding there would animate a position the hero never had.
+
+Two consequences are worth knowing before changing this code:
+
+- A step the client judges blocked is never sent. So a `blocked` answer from the server can only mean the client's copy of the rule was wrong — in practice a gate that has opened or closed — and it is treated as a signal to re-read the player, not as an ordinary event.
+- **A walk is never sent twice.** Walking is relative to where the hero stands, so repeating a walk whose answer was lost could move the hero twice as far. Every failure, of every kind, recovers the same way: ask the server where the hero is. Do not add a retry here.
+
+Players who ask their system to reduce motion get movement without animation. The hero's position is announced to a screen reader once a walk has settled, not once per step.
+
 ## How the client talks to the server
 Every game operation goes through one layer, `src/api/client.ts`. Answers are typed from the API description. Every problem comes back as one of these named failures and never as an exception:
 
