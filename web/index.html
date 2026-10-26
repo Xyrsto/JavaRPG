@@ -9,6 +9,13 @@
     <a class="skip" href="#main">Skip to the main content</a>
     <main id="main" tabindex="-1">
       <h1>JavaRPG</h1>
+      <canvas
+        id="world"
+        class="world"
+        tabindex="0"
+        aria-label="The village map. Walk with the arrow keys or with W, A, S and D."
+      ></canvas>
+      <p id="world-text" class="visually-hidden" aria-live="polite"></p>
       <p id="server-status" role="status">Connecting to the game server.</p>
     </main>
     <script type="module" src="/src/main.ts"></script>
