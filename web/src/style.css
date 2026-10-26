@@ -3,6 +3,19 @@
   --text: #14171a;
   --page: #ffffff;
   --accent: #0b4f9c;
+
+  /* The world's colours live here alone, so the contrast pass (issue #17) tunes them in one place.
+     Nothing on the map is told apart by colour: every tile and mark also differs in shape or glyph. */
+  --tile-ground: #e7e0cf;
+  --tile-wall: #4a443f;
+  --tile-gate-closed: #8a5520;
+  --tile-gate-open: #cbb48a;
+  --tile-unknown: #6a6a6a;
+  --tile-glyph: #14171a;
+  --mark-npc: #11506b;
+  --mark-hero: #0b4f9c;
+  --mark-glyph: #ffffff;
+  --bump: #a11b1b;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -10,6 +23,17 @@
     --text: #eef1f4;
     --page: #14171a;
     --accent: #8cc4ff;
+
+    --tile-ground: #3a3a36;
+    --tile-wall: #0e1012;
+    --tile-gate-closed: #a9701f;
+    --tile-gate-open: #6b5a3a;
+    --tile-unknown: #555555;
+    --tile-glyph: #f4f1ea;
+    --mark-npc: #7ec8e8;
+    --mark-hero: #8cc4ff;
+    --mark-glyph: #0e1012;
+    --bump: #ff7b7b;
   }
 }
 
@@ -43,4 +67,26 @@ main {
 :focus-visible {
   outline: 3px solid var(--accent);
   outline-offset: 2px;
+}
+
+/* The map fills the column and keeps the world's own proportions, so the whole map is always visible without
+   scrolling. The ratio is set from the world the server sent; the fallback only applies before it arrives. */
+.world {
+  display: block;
+  width: 100%;
+  aspect-ratio: var(--world-aspect, 4 / 3);
+  background: var(--tile-ground);
+}
+
+/* Announcements for players who are not looking at the map: read by a screen reader, never shown on screen. */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
 }

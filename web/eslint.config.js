@@ -29,10 +29,30 @@ export default defineConfig(
     files: ['**/*.ts', '**/*.js'],
     languageOptions: {
       // The rules about code built from text need to know these browser globals.
-      globals: { window: 'readonly', document: 'readonly', setTimeout: 'readonly', setInterval: 'readonly' },
+      globals: {
+        window: 'readonly',
+        document: 'readonly',
+        setTimeout: 'readonly',
+        clearTimeout: 'readonly',
+        setInterval: 'readonly',
+        // The world drawing and the keyboard need these; the list stays an explicit inventory, never a blanket preset.
+        requestAnimationFrame: 'readonly',
+        cancelAnimationFrame: 'readonly',
+        performance: 'readonly',
+        localStorage: 'readonly',
+        devicePixelRatio: 'readonly',
+        matchMedia: 'readonly',
+        ResizeObserver: 'readonly',
+        OffscreenCanvas: 'readonly',
+        HTMLCanvasElement: 'readonly',
+        CanvasRenderingContext2D: 'readonly',
+        KeyboardEvent: 'readonly',
+      },
     },
     rules: {
       'no-restricted-syntax': ['error', ...restricted],
+      // An argument named with a leading underscore is kept on purpose, to hold a function's shape (see input/walker.ts).
+      '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_', varsIgnorePattern: '^_', caughtErrors: 'all' }],
       'no-eval': 'error',
       'no-implied-eval': 'error',
       'no-new-func': 'error',
